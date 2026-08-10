@@ -184,7 +184,7 @@ function numberToWordsIndian(num: number): string {
 export default function Dashboard() {
   const [timeCheckResult, setTimeCheckResult] = useState<TimeCheckResult | null>(null);
   const [timeChecking, setTimeChecking] = useState<boolean>(true);
-  const [timeAlertConfirmed, setTimeAlertConfirmed] = useState<boolean>(false);
+  const [timeAlertConfirmed, setTimeAlertConfirmed] = useState<boolean>(true);
 
   const runSystemTimeCheck = async () => {
     setTimeChecking(true);
@@ -1082,18 +1082,6 @@ export default function Dashboard() {
   const goldSold = daybook?.sold_items.filter(i => i.item_name.includes("GOLD")).reduce((s, i) => s + i.weight, 0) || 0;
   const silverSold = daybook?.sold_items.filter(i => i.item_name.includes("SILVER")).reduce((s, i) => s + i.weight, 0) || 0;
 
-  // ── Guard: System Time Check Alert (Before Login) ──────────────────────────────────
-  if (!timeAlertConfirmed) {
-    return (
-      <SystemTimeAlertModal
-        timeResult={timeCheckResult}
-        loading={timeChecking}
-        onContinue={() => setTimeAlertConfirmed(true)}
-        onRestart={() => window.location.reload()}
-        onRecheck={runSystemTimeCheck}
-      />
-    );
-  }
 
   // ── Guard: Login ──────────────────────────────────────────────────────────
   if (!isAuthenticated) return <LuxuryLogin onLogin={handleLogin} />;
