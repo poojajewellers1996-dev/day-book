@@ -1073,6 +1073,8 @@ export default function Dashboard() {
         .nav-item { transition: background 0.15s, color 0.15s; }
         .nav-item:hover { background: rgba(212,175,55,0.12); }
         .sidebar-transition { transition: width 0.25s cubic-bezier(0.4,0,0.2,1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         @media print {
           .print-hidden { display: none !important; }
         }
@@ -1347,7 +1349,7 @@ export default function Dashboard() {
           }}
         >
           {/* Nav items */}
-          <nav className="flex-1 py-4 px-2 space-y-1">
+          <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto no-scrollbar">
             {NAV.map(item => {
               const isActive = activeNav === item.id;
               return (
@@ -1417,7 +1419,7 @@ export default function Dashboard() {
               className="relative flex flex-col"
               style={{
                 width: 240, background: "white", borderRight: "1px solid rgba(212,175,55,0.2)",
-                boxShadow: "4px 0 24px rgba(0,0,0,0.12)", zIndex: 50,
+                boxShadow: "4px 0 24px rgba(0,0,0,0.12)", zIndex: 50, height: "100%"
               }}
             >
               <div className="flex items-center justify-between px-4 py-4" style={{ borderBottom: "1px solid rgba(212,175,55,0.15)" }}>
@@ -1426,7 +1428,7 @@ export default function Dashboard() {
                   <X size={18} style={{ color: "#8B6914" }} />
                 </button>
               </div>
-              <nav className="flex-1 py-4 px-2 space-y-1">
+              <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto no-scrollbar">
                 {NAV.map(item => {
                   const isActive = activeNav === item.id;
                   return (
