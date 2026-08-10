@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import {
   Calendar, ArrowLeft, ArrowRight, Download, Upload,
@@ -434,6 +435,15 @@ export default function Dashboard() {
 
   const ratePerGram = displayRate;
 
+  const pathname = usePathname();
+  const router = useRouter();
+
+  const getNavFromPath = (path: string) => {
+    const clean = path.replace(/^\//, "");
+    if (!clean) return "daybook";
+    return NAV.some(item => item.id === clean) ? clean : "daybook";
+  };
+
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [showSetup, setShowSetup] = useState<boolean>(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState<boolean>(false);
@@ -441,8 +451,35 @@ export default function Dashboard() {
   const [passwordError, setPasswordError] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
-  const [activeNav, setActiveNav] = useState<string>("daybook");
+  const [activeNav, setActiveNav] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const clean = window.location.pathname.replace(/^\//, "");
+      if (clean && NAV.some(item => item.id === clean)) {
+        return clean;
+      }
+    }
+    return "daybook";
+  });
   const [currentTime, setCurrentTime] = useState(() => getSyncedDate());
+
+  // Sync activeNav state with path changes (Back/Forward browser buttons)
+  useEffect(() => {
+    if (pathname) {
+      const nav = getNavFromPath(pathname);
+      if (nav !== activeNav) {
+        setActiveNav(nav);
+      }
+    }
+  }, [pathname]);
+
+  // Logout if user goes back to the root page '/'
+  useEffect(() => {
+    if (pathname === "/" && isAuthenticated) {
+      localStorage.removeItem("pooja_daybook_auth");
+      localStorage.removeItem("pooja_daybook_token");
+      setIsAuthenticated(false);
+    }
+  }, [pathname, isAuthenticated]);
 
   // Global Interest Calculator States
   const [showGlobalCalcModal, setShowGlobalCalcModal] = useState<boolean>(false);
@@ -723,6 +760,7 @@ export default function Dashboard() {
             localStorage.setItem("pooja_daybook_token", forceData.access_token);
             localStorage.setItem("pooja_daybook_auth", "true");
             setIsAuthenticated(true);
+            router.push("/daybook");
             
             if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
               const setupRes = await fetch(`${API_BASE}/setup/is-first-time`);
@@ -742,6 +780,7 @@ export default function Dashboard() {
       localStorage.setItem("pooja_daybook_token", token);
       localStorage.setItem("pooja_daybook_auth", "true");
       setIsAuthenticated(true);
+      router.push("/daybook");
 
       // Check first-time setup after login
       if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
@@ -1355,7 +1394,7 @@ export default function Dashboard() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveNav(item.id)}
+                  onClick={() => { setActiveNav(item.id); router.push(`/${item.id}`); }}
                   className="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left"
                   style={{
                     background: isActive ? "rgba(212,175,55,0.12)" : "transparent",
@@ -1434,7 +1473,7 @@ export default function Dashboard() {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => { setActiveNav(item.id); setMobileSidebarOpen(false); }}
+                      onClick={() => { setActiveNav(item.id); setMobileSidebarOpen(false); router.push(`/${item.id}`); }}
                       className="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left"
                       style={{
                         background: isActive ? "rgba(212,175,55,0.12)" : "transparent",
