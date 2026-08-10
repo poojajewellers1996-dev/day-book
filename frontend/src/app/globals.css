@@ -1,0 +1,226 @@
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+:root {
+  --background: #fbf8f3; /* Traditional cream paper color */
+  --foreground: #2d241e; /* Deep dark brown instead of harsh black */
+  --diary-red: #b91c1c; /* Traditional red */
+  --diary-crimson: #991b1b;
+  --diary-cream: #faf5ed;
+  --diary-grid: rgba(185, 28, 28, 0.15); /* Reddish lines for the ledger look */
+  --font-serif: 'Lora', Georgia, serif;
+  --font-sans: 'Outfit', sans-serif;
+}
+
+.dark {
+  --background: #1c0e0b; /* Dark brownish-red */
+  --foreground: #f5eae4;
+  --diary-red: #dc2626;
+  --diary-crimson: #b91c1c;
+  --diary-cream: #2d1815;
+  --diary-grid: rgba(220, 38, 38, 0.2);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-diary-red: var(--diary-red);
+  --color-diary-crimson: var(--diary-crimson);
+  --color-diary-cream: var(--diary-cream);
+  --color-diary-grid: var(--diary-grid);
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+}
+
+/* Hide number input spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  background-image: 
+    radial-gradient(rgba(185, 28, 28, 0.04) 1px, transparent 0),
+    radial-gradient(rgba(185, 28, 28, 0.04) 1px, transparent 0);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+}
+
+/* Diary Ledger Page Layout Styling */
+.ledger-page {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(185, 28, 28, 0.15);
+  background-color: var(--diary-cream);
+}
+
+.ledger-line-y {
+  border-right: 1.5px double var(--diary-grid);
+}
+
+.ledger-row {
+  border-bottom: 1px solid var(--diary-grid);
+}
+
+/* Smooth swipe transition styles */
+.slide-enter {
+  transform: translateX(100%);
+  opacity: 0;
+}
+.slide-enter-active {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+}
+.slide-exit {
+  transform: translateX(0);
+  opacity: 1;
+}
+.slide-exit-active {
+  transform: translateX(-100%);
+  opacity: 0;
+  transition: transform 300ms ease-out, opacity 300ms ease-out;
+}
+
+/* Custom Scrollbar for premium feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--diary-red);
+  border-radius: 3px;
+  opacity: 0.5;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--diary-crimson);
+}
+
+/* @media print layouts for Full Day Book PDF exports */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 8mm 8mm 8mm;
+  }
+
+  body {
+    background-color: #faf5ed !important;
+    background-image: none !important;
+    color: #2d241e !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide interactive elements, sidebars, stats and header controls */
+  header,
+  footer,
+  aside,
+  form,
+  button,
+  select,
+  input,
+  .no-print,
+  .print-hidden,
+  [role="tablist"],
+  .fixed:not(#print-overlay-wrapper):not(#print-bill-overlay-wrapper):not(#print-modal-backdrop),
+  .sticky:not(#print-overlay-wrapper):not(#print-bill-overlay-wrapper):not(#print-modal-backdrop) {
+    display: none !important;
+  }
+
+  /* Ensure main wrapper and page content flow normally */
+  main,
+  .main-content {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Make print area take up full page dimensions without height restrictions */
+  #daybook-print-area,
+  #daybook-print-area.ledger-page,
+  #daybook-print-area .ledger-page {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    box-shadow: none !important;
+    border: 1.5px solid rgba(185, 28, 28, 0.3) !important;
+    background-color: #faf5ed !important;
+    page-break-after: auto !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Force display both Front Side and Back Side columns on full-width separate pages */
+  #daybook-print-area .print\:block {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Force Back Side to start on a separate page */
+  #daybook-print-area .print\:break-before-page {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  /* Hide floating tooltips, popovers, and explicit print:hidden controls */
+  #daybook-print-area .absolute,
+  #daybook-print-area [class*="group-hover"],
+  #daybook-print-area .print\:hidden,
+  #daybook-print-area [class*="print:hidden"] {
+    display: none !important;
+  }
+
+  /* Reset height limits & overflow bounds so ALL ledger & section entries are completely visible */
+  #daybook-print-area [class*="max-h-"],
+  #daybook-print-area [class*="min-h-"],
+  #daybook-print-area [class*="overflow-"] {
+    max-height: none !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    height: auto !important;
+  }
+
+  /* Ledger section cards and rows break protection */
+  #daybook-print-area .ledger-row,
+  #daybook-print-area .space-y-6 > *,
+  #daybook-print-area table tr {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .ledger-page h2 {
+    font-size: 1.5rem !important;
+    line-height: 1.75rem !important;
+    margin-bottom: 2px !important;
+  }
+  .ledger-page p {
+    font-size: 10px !important;
+  }
+
+  /* Compress space-y spacing slightly for clean page flow */
+  #daybook-print-area .space-y-6 {
+    margin-top: 12px !important;
+  }
+}
+

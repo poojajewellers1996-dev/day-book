@@ -1,0 +1,24 @@
+{
+  "name": "Marwadi Digital Day Book",
+  "short_name": "Day Book",
+  "description": "Traditional Lal Bahi daily diary application for Pooja Jewellers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf8f3",
+  "theme_color": "#b91c1c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/globe.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/globe.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
