@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Plus, Search, Printer, CheckCircle, Trash2, X, RefreshCw, AlertCircle, Coins, BookOpen, Pencil, Undo2 } from "lucide-react";
-import { PledgeEntry, fetchAllPledges, updatePledgeEntry, addSubEntry, fetchDayBook, PledgePayment, addPledgePayment, deletePledgePayment, revertPledgeRelease } from "../utils/api";
+import { PledgeEntry, fetchAllPledges, updatePledgeEntry, addSubEntry, fetchDayBook, PledgePayment, addPledgePayment, deletePledgePayment, revertPledgeRelease, API_BASE } from "../utils/api";
 import { formatGirviReminderMsg, formatGirviReleaseMsg, openWhatsApp, sanitizePhoneNumber } from "../utils/whatsapp";
 
 
@@ -637,7 +637,7 @@ export default function GirviLedgerView({
     if (!confirm(`Are you sure you want to delete Pledge ${pledge.pledge_no}? This will also delete its associated Release and auto-posted entries.`)) return;
 
     try {
-      const res = await fetch(`http://localhost:8000/api/pledge/${pledge.id}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE}/pledge/${pledge.id}`, { method: "DELETE" });
       if (res.ok) {
         showNotification(`Pledge ${pledge.pledge_no} deleted`, "success");
         loadPledges();

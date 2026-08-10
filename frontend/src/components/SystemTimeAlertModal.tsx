@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { AlertTriangle, Clock, RefreshCw, RotateCcw, ShieldAlert, CheckCircle2, Monitor, ArrowRight, Settings, ExternalLink } from "lucide-react";
 import { TimeCheckResult } from "../utils/timeUtils";
+import { API_BASE } from "../utils/api";
 
 interface SystemTimeAlertModalProps {
   timeResult: TimeCheckResult | null;
@@ -29,7 +30,7 @@ export default function SystemTimeAlertModal({
 
   const handleOpenSettings = async () => {
     try {
-      await fetch("http://localhost:8000/api/system/open-date-settings", { method: "POST" });
+      await fetch(`${API_BASE}/system/open-date-settings`, { method: "POST" });
     } catch (e) {
       console.warn("Could not trigger open-date-settings via backend:", e);
     }

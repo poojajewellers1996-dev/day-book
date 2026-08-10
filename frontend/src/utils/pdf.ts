@@ -1,5 +1,5 @@
 import { openWhatsApp } from "./whatsapp";
-import { sendBackendWhatsAppPdfInvoice } from "./api";
+import { sendBackendWhatsAppPdfInvoice, API_BASE } from "./api";
 
 export const exportToPDF = async (elementId: string, dateStr: string) => {
   if (typeof window === "undefined") return;
@@ -43,8 +43,8 @@ export const generateAndDownloadInvoicePDF = async (billData: InvoicePDFData) =>
 
     if (res?.download_url) {
       const link = document.createElement("a");
-      const baseUrl = typeof window !== "undefined" ? window.location.origin.replace(":3000", ":8000") : "http://localhost:8000";
-      link.href = `${baseUrl}${res.download_url}`;
+      const backendBaseUrl = API_BASE.replace(/\/api$/, "");
+      link.href = `${backendBaseUrl}${res.download_url}`;
       link.download = res.file_name || filename;
       link.target = "_blank";
       document.body.appendChild(link);

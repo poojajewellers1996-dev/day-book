@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import {
   DayBook, fetchDayBook, syncOfflineQueue, PledgeEntry, saveDayBookCash, SoldItem, fetchAllSoldItems,
-  OldGoldEntry, OldSilverEntry, downloadDatabaseBackup, restoreDatabaseBackup,
+  OldGoldEntry, OldSilverEntry, downloadDatabaseBackup, restoreDatabaseBackup, API_BASE,
 } from "../utils/api";
 import { exportBackup, importBackup } from "../utils/backup";
 import { exportToPDF } from "../utils/pdf";
@@ -585,7 +585,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchRates = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/live-rates");
+        const res = await fetch(`${API_BASE}/live-rates`);
         if (res.ok) {
           const data = await res.json();
           setLiveRates(data);
@@ -642,7 +642,7 @@ export default function Dashboard() {
 
     const checkServerRunId = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/system/run-id");
+        const res = await fetch(`${API_BASE}/system/run-id`);
         if (!res.ok) return;
         const data = await res.json();
         const runId = data.run_id;
@@ -668,7 +668,7 @@ export default function Dashboard() {
       setIsAuthenticated(true);
       // Check if this is first-time use (no opening balance ever set)
       if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
-        fetch("http://localhost:8000/api/setup/is-first-time")
+        fetch(`${API_BASE}/setup/is-first-time`)
           .then(r => r.json())
           .then(data => { if (data.first_time) setShowSetup(true); })
           .catch(() => { }); // ignore if backend down
@@ -682,7 +682,7 @@ export default function Dashboard() {
 
   const handleLogin = async (username: string, password: string): Promise<boolean> => {
     try {
-      const res = await fetch("http://localhost:8000/api/auth/login", {
+      const res = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password })
@@ -698,7 +698,7 @@ export default function Dashboard() {
 
       // Check first-time setup after login
       if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
-        const setupRes = await fetch("http://localhost:8000/api/setup/is-first-time");
+        const setupRes = await fetch(`${API_BASE}/setup/is-first-time`);
         if (setupRes.ok) {
           const setupData = await setupRes.json();
           if (setupData.first_time) setShowSetup(true);
@@ -3139,7 +3139,7 @@ function DashboardView() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/dashboard/stats")
+    fetch(`${API_BASE}/dashboard/stats`)
       .then(res => res.json())
       .then(data => {
         setStats(data);
@@ -3658,7 +3658,7 @@ function ReportsView({ onSelectDate }: ReportsViewProps) {
     setSearching(true);
     setSearched(true);
     try {
-      const res = await fetch(`http://localhost:8000/api/reports/range?start_date=${startDate}&end_date=${endDate}`);
+      const res = await fetch(`${API_BASE}/reports/range?start_date=${startDate}&end_date=${endDate}`);
       if (res.ok) {
         const data = await res.json();
         setDaybooks(data);

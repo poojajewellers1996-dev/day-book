@@ -1,3 +1,5 @@
+import { API_BASE } from "./api";
+
 export interface SyncedTimeData {
   date: string;       // YYYY-MM-DD
   time: string;       // HH:MM:SS
@@ -21,7 +23,7 @@ if (typeof window !== "undefined") {
 
 export async function fetchInternetTime(): Promise<SyncedTimeData | null> {
   const endpoints = [
-    "http://localhost:8000/api/system/network-time",
+    `${API_BASE}/system/network-time`,
     "https://worldtimeapi.org/api/timezone/Asia/Kolkata",
     "https://timeapi.io/api/v1/time/current/zone?timeZone=Asia/Kolkata"
   ];
@@ -129,7 +131,7 @@ export async function setManualTimeOffset(targetDateStr: string, targetTimeStr: 
 
   // Inform backend of new offset
   try {
-    await fetch("http://localhost:8000/api/system/set-time-offset", {
+    await fetch(`${API_BASE}/system/set-time-offset`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ offset_seconds: cachedOffsetMs / 1000 })
@@ -190,7 +192,7 @@ export async function checkSystemVsGoogleTime(): Promise<TimeCheckResult> {
   });
 
   try {
-    const res = await fetch("http://localhost:8000/api/system/google-time", { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/system/google-time`, { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
       if (data.success) {

@@ -35,7 +35,8 @@ import {
   deleteDebitEntry,
   deletePurchaseParty,
   convertDebitToRateCut,
-  revertDebitRateCut
+  revertDebitRateCut,
+  API_BASE
 } from "../utils/api";
 
 interface PurchasePartyViewProps {
@@ -192,7 +193,7 @@ export default function PurchasePartyView({ currentDate, showNotification }: Pur
         items: []
       };
 
-      const res = await fetch("http://localhost:8000/api/purchase/bill", {
+      const res = await fetch(`${API_BASE}/purchase/bill`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -359,7 +360,7 @@ export default function PurchasePartyView({ currentDate, showNotification }: Pur
       }
       
       try {
-        const res = await fetch(`http://localhost:8000/api/purchase/bill/${billId}`, {
+        const res = await fetch(`${API_BASE}/purchase/bill/${billId}`, {
           method: "DELETE"
         });
         if (res.ok) {
