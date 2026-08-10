@@ -852,16 +852,6 @@ export default function Dashboard() {
     setCurrentDate(d.toISOString().split("T")[0]);
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.targetTouches[0].clientX; };
-  const handleTouchMove = (e: React.TouchEvent) => { touchEndX.current = e.targetTouches[0].clientX; };
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const dist = touchStartX.current - touchEndX.current;
-    if (dist > 75) changeDate(1);
-    else if (dist < -75) changeDate(-1);
-    touchStartX.current = null;
-    touchEndX.current = null;
-  };
 
   const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1076,9 +1066,6 @@ export default function Dashboard() {
     <div
       className="min-h-screen flex flex-col"
       style={{ background: "#F5F0E8", fontFamily: "'Segoe UI', sans-serif" }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       <style>{`
         @keyframes slide-down { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
@@ -1143,10 +1130,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Centre: Date navigator */}
+        {/* Centre: Date navigator (Desktop only) */}
         {["daybook", "pledges", "pledge_form", "existing_girvi", "sale_form"].includes(activeNav) && (
           <div
-            className="h-9 flex items-center gap-1 px-3 rounded-xl"
+            className="hidden md:flex h-9 items-center gap-1 px-3 rounded-xl"
             style={{ background: "#FFF9F0", border: "1px solid rgba(212,175,55,0.25)" }}
           >
             <button
@@ -1244,16 +1231,16 @@ export default function Dashboard() {
             title="Open Interest Calculator"
           >
             <Calculator size={14} className="text-amber-800" />
-            <span>Calculator</span>
+            <span className="hidden md:inline">Calculator</span>
           </button>
 
-          {/* Action buttons */}
+          {/* Action buttons (Desktop only) */}
           {["daybook", "pledges", "pledge_form", "existing_girvi", "sales", "sale_form"].includes(activeNav) && (
             <>
               <button
                 onClick={triggerPDFExport}
                 title="Export Full Page PDF"
-                className="h-9 flex items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
+                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
                 style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
               >
                 <FileText size={14} />
@@ -1263,7 +1250,7 @@ export default function Dashboard() {
               <button
                 onClick={exportBackup}
                 title="Download Backup"
-                className="h-9 flex items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
+                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
                 style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
               >
                 <Download size={14} />
@@ -1272,7 +1259,7 @@ export default function Dashboard() {
 
               <label
                 title="Import Backup"
-                className="h-9 flex items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
+                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
                 style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
               >
                 <Upload size={14} />
@@ -1283,7 +1270,7 @@ export default function Dashboard() {
               <button
                 onClick={triggerManualSync}
                 title="Sync Now"
-                className="h-9 flex items-center gap-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer"
                 style={{
                   background: "linear-gradient(135deg,#c8960c,#D4AF37)",
                   color: "#fff",
@@ -1490,6 +1477,36 @@ export default function Dashboard() {
           `}</style>
 
           <div className="main-content px-4 py-6">
+            {/* Mobile Date Navigator */}
+            {["daybook", "pledges", "pledge_form", "existing_girvi", "sale_form"].includes(activeNav) && (
+              <div className="md:hidden flex items-center justify-between mb-5 p-2 bg-white rounded-2xl border border-amber-250/20 shadow-xs">
+                <button
+                  onClick={() => changeDate(-1)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50/70 active:scale-95 transition-all"
+                >
+                  <ChevronLeft size={20} style={{ color: "#8B6914" }} />
+                </button>
+                <div className="relative flex-1 flex items-center justify-center gap-2 cursor-pointer py-1.5">
+                  <Calendar size={15} style={{ color: "#D4AF37" }} />
+                  <span className="text-sm font-black" style={{ color: "#2D1B0E" }}>
+                    {fmtDateFriendly(currentDate)}
+                  </span>
+                  <input
+                    type="date"
+                    value={currentDate}
+                    onChange={e => setCurrentDate(e.target.value)}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                </div>
+                <button
+                  onClick={() => changeDate(1)}
+                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50/70 active:scale-95 transition-all"
+                >
+                  <ChevronRight size={20} style={{ color: "#8B6914" }} />
+                </button>
+              </div>
+            )}
+
             {activeNav === "daybook" && (
               <>
                 {/* ── STAT CARDS ── */}
