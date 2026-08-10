@@ -273,6 +273,8 @@ class SystemUser(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, default="admin")
     password_hash = Column(String, nullable=False)
+    current_session_id = Column(String, nullable=True)
+    last_active_at = Column(DateTime, nullable=True)
 
 
 

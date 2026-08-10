@@ -20,6 +20,21 @@ try:
 except Exception:
     pass
 
+try:
+    with engine.connect() as conn:
+        try:
+            conn.execute(sqlalchemy.text("ALTER TABLE system_users ADD COLUMN current_session_id VARCHAR"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(sqlalchemy.text("ALTER TABLE system_users ADD COLUMN last_active_at TIMESTAMP"))
+            conn.commit()
+        except Exception:
+            pass
+except Exception:
+    pass
+
 # ─── SECURITY & AUTHENTICATION UTILITIES ───
 import hashlib
 import secrets
@@ -61,12 +76,14 @@ def base64url_decode(data: str) -> bytes:
     padding = "=" * (4 - (len(data) % 4))
     return base64.urlsafe_b64decode(data + padding)
 
-def create_access_token(subject: str, expires_in: int = 86400) -> str:
+def create_access_token(subject: str, session_id: Optional[str] = None, expires_in: int = 86400) -> str:
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {
         "sub": subject,
         "exp": int(time.time()) + expires_in
     }
+    if session_id:
+        payload["sid"] = session_id
     header_b64 = base64url_encode(json.dumps(header).encode("utf-8"))
     payload_b64 = base64url_encode(json.dumps(payload).encode("utf-8"))
     message = f"{header_b64}.{payload_b64}"
@@ -118,14 +135,17 @@ from fastapi import Request
 
 security_scheme = HTTPBearer(auto_error=False)
 
-def verify_token_dependency(request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme)):
+def verify_token_dependency(
+    request: Request, 
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    db: Session = Depends(get_db)
+):
     path = request.url.path
     # Bypassed paths
     if path in ["/api/auth/login", "/api/system/run-id", "/api/system/network-time", "/api/system/google-time", "/api/system/open-date-settings", "/api/system/set-time-offset", "/api/setup/is-first-time", "/api/live-rates", "/api/udar/outstanding"] or path.startswith("/api/whatsapp") or path.startswith("/api/udar"):
         return None
         
     if not credentials:
-
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated. Missing Authorization credentials."
@@ -138,6 +158,30 @@ def verify_token_dependency(request: Request, credentials: Optional[HTTPAuthoriz
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Session expired or invalid token. Please log in again."
         )
+        
+    username = payload.get("sub")
+    sid = payload.get("sid")
+    if not sid:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="SESSION_SUPERSEDED"
+        )
+        
+    if username:
+        user = db.query(models.SystemUser).filter(models.SystemUser.username == username).first()
+        if user:
+            if user.current_session_id != sid:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="SESSION_SUPERSEDED"
+                )
+            from datetime import datetime
+            user.last_active_at = datetime.utcnow()
+            try:
+                db.commit()
+            except Exception:
+                db.rollback()
+                
     return payload
 
 
@@ -449,6 +493,7 @@ def open_date_settings():
 def login(payload: dict, db: Session = Depends(get_db)):
     username = payload.get("username", "admin") or "admin"
     password = payload.get("password")
+    force = payload.get("force", False)
     
     if not password:
         raise HTTPException(status_code=400, detail="Password is required")
@@ -477,7 +522,36 @@ def login(payload: dict, db: Session = Depends(get_db)):
             detail="Incorrect username or password"
         )
         
-    token = create_access_token(user.username)
+    # Check if there is already an active session in the last 2 minutes
+    from datetime import datetime, timedelta
+    import uuid
+    
+    now = datetime.utcnow()
+    is_session_active = False
+    if user.current_session_id and user.last_active_at:
+        last_active = user.last_active_at
+        if isinstance(last_active, str):
+            try:
+                clean_str = last_active.split(".")[0]
+                last_active = datetime.strptime(clean_str, "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                last_active = now - timedelta(minutes=5)
+        try:
+            if (now - last_active) < timedelta(minutes=2):
+                is_session_active = True
+        except Exception:
+            pass
+            
+    if is_session_active and not force:
+        return {"status": "session_active", "message": "Another device is currently logged in."}
+        
+    # Generate new session ID and save it
+    new_sid = str(uuid.uuid4())
+    user.current_session_id = new_sid
+    user.last_active_at = now
+    db.commit()
+        
+    token = create_access_token(user.username, session_id=new_sid)
     return {"access_token": token, "token_type": "bearer"}
 
 # --- DayBook Routes ---

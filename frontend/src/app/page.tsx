@@ -629,7 +629,23 @@ export default function Dashboard() {
         }
         init.headers = headers;
       }
-      return originalFetch(input, init);
+      const response = await originalFetch(input, init);
+      
+      if (response.status === 401) {
+        try {
+          const clone = response.clone();
+          const body = await clone.json();
+          if (body.detail === "SESSION_SUPERSEDED") {
+            localStorage.removeItem("pooja_daybook_auth");
+            localStorage.removeItem("pooja_daybook_token");
+            setIsAuthenticated(false);
+            window.alert("Another login was detected on a different device. You have been logged out.");
+          }
+        } catch (e) {
+          // ignore non-json or failed parses
+        }
+      }
+      return response;
     };
     return () => {
       window.fetch = originalFetch;
@@ -690,6 +706,37 @@ export default function Dashboard() {
       if (!res.ok) return false;
 
       const data = await res.json();
+      
+      if (data.status === "session_active") {
+        const proceed = window.confirm(
+          "Another device is currently logged in. Logging in here will log out the other device. Do you want to continue?"
+        );
+        if (proceed) {
+          const forceRes = await fetch(`${API_BASE}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password, force: true })
+          });
+          if (!forceRes.ok) return false;
+          const forceData = await forceRes.json();
+          if (forceData.access_token) {
+            localStorage.setItem("pooja_daybook_token", forceData.access_token);
+            localStorage.setItem("pooja_daybook_auth", "true");
+            setIsAuthenticated(true);
+            
+            if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
+              const setupRes = await fetch(`${API_BASE}/setup/is-first-time`);
+              if (setupRes.ok) {
+                const setupData = await setupRes.json();
+                if (setupData.first_time) setShowSetup(true);
+              }
+            }
+            return true;
+          }
+        }
+        return false;
+      }
+
       const token = data.access_token;
 
       localStorage.setItem("pooja_daybook_token", token);
