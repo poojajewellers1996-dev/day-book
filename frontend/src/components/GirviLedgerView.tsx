@@ -1130,9 +1130,9 @@ export default function GirviLedgerView({
       </div>
 
       {/* Comprehensive Search & Filter Controls Suite */}
-      <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm space-y-4">
+      <div className="bg-white p-3 sm:p-5 rounded-2xl border border-amber-100 shadow-sm space-y-3">
         {/* Row 1: Search + Status Tabs + Quick Action Buttons */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 justify-between">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2 justify-between">
           {/* Search Bar */}
           <div className="relative flex-1">
             <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-900/40">
@@ -1140,10 +1140,10 @@ export default function GirviLedgerView({
             </span>
             <input
               type="text"
-              placeholder="Search Pawner Name, Pledge No, Ornament, Address..."
+              placeholder="Search name, pledge no, ornament..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-amber-200 outline-none text-xs focus:border-amber-500 font-medium"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-amber-200 outline-none text-sm focus:border-amber-500 font-medium"
               style={{ background: "#FFFBF5" }}
             />
             {searchTerm && (
@@ -1158,32 +1158,32 @@ export default function GirviLedgerView({
           </div>
 
           {/* Status Filter Tabs */}
-          <div className="flex bg-amber-50/70 p-1 rounded-xl border border-amber-200/60 text-xs font-bold text-amber-900 self-start lg:self-auto">
+          <div className="flex bg-amber-50/70 p-1 rounded-xl border border-amber-200/60 text-xs font-bold text-amber-900 self-start lg:self-auto overflow-x-auto">
             <button
               type="button"
               onClick={() => setStatusFilter("ALL")}
-              className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === "ALL" ? "bg-white text-amber-950 shadow-sm font-black" : "hover:text-amber-950"}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${statusFilter === "ALL" ? "bg-white text-amber-950 shadow-sm font-black" : "hover:text-amber-950"}`}
             >
-              All Pledges ({pledges.length})
+              All ({pledges.length})
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter("ACTIVE")}
-              className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === "ACTIVE" ? "bg-white text-amber-950 shadow-sm font-black" : "hover:text-amber-950"}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${statusFilter === "ACTIVE" ? "bg-white text-amber-950 shadow-sm font-black" : "hover:text-amber-950"}`}
             >
               Active ({pledges.filter(p => p.status !== "RELEASED").length})
             </button>
             <button
               type="button"
               onClick={() => setStatusFilter("RELEASED")}
-              className={`px-3 py-1.5 rounded-lg transition-all ${statusFilter === "RELEASED" ? "bg-white text-emerald-950 shadow-sm font-black" : "hover:text-emerald-950"}`}
+              className={`px-2.5 py-1.5 rounded-lg transition-all whitespace-nowrap ${statusFilter === "RELEASED" ? "bg-white text-emerald-950 shadow-sm font-black" : "hover:text-emerald-950"}`}
             >
               Released ({pledges.filter(p => p.status === "RELEASED").length})
             </button>
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 flex-wrap">
             <button
               onClick={loadPledges}
               className="p-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors"
@@ -1194,42 +1194,42 @@ export default function GirviLedgerView({
             <button
               type="button"
               onClick={() => setShowCalcModal(true)}
-              className="px-3.5 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
+              className="px-3 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
             >
-              🧮 Calculator
+              🧮 <span className="hidden sm:inline">Calc</span>
             </button>
             <button
               type="button"
               onClick={handleExportCSV}
-              className="px-3.5 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
-              title="Export Ledger to Excel / CSV"
+              className="px-3 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
+              title="Export"
             >
-              📤 Export
+              📤 <span className="hidden sm:inline">Export</span>
             </button>
             <button
               type="button"
               onClick={() => setShowImportModal(true)}
-              className="px-3.5 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
-              title="Import Pledges from Excel / CSV"
+              className="px-3 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
+              title="Import"
             >
-              📥 Import
+              📥 <span className="hidden sm:inline">Import</span>
             </button>
             <button
               onClick={onSwitchToForm}
-              className="px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wide transition-all text-white flex items-center justify-center gap-1.5"
+              className="px-3 py-2.5 rounded-xl font-black text-xs uppercase tracking-wide transition-all text-white flex items-center justify-center gap-1.5"
               style={{
                 background: "linear-gradient(135deg,#c8960c,#D4AF37)",
                 boxShadow: "0 2px 8px rgba(212,175,55,0.3)",
               }}
             >
               <Plus size={14} />
-              New Girvi
+              New
             </button>
           </div>
         </div>
 
         {/* Row 2: Metal Filter + Sort By Dropdown + Date Range Filters */}
-        <div className="pt-3 border-t border-amber-100/80 flex flex-wrap items-center gap-3 text-xs">
+        <div className="pt-2 border-t border-amber-100/80 flex flex-wrap items-center gap-2 text-xs">
           {/* Metal Filter */}
           <div className="flex items-center gap-1.5">
             <span className="font-bold text-amber-900/70 font-serif">Metal:</span>
@@ -1328,7 +1328,7 @@ export default function GirviLedgerView({
       </div>
 
       {/* Grid Sheet Pledges */}
-      <div className="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-amber-100 shadow-sm overflow-hidden">
         {loading ? (
           <div className="text-center py-16 text-amber-900/60 font-serif">
             <RefreshCw className="animate-spin mx-auto mb-3" size={28} />
@@ -1339,208 +1339,291 @@ export default function GirviLedgerView({
             No pledge records found matching filter constraints.
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b border-amber-100 bg-amber-50/20" style={{ color: "#8B6914" }}>
-                  <th className="py-4 px-4 font-bold font-serif">Pledge No</th>
-                  <th className="py-4 px-4 font-bold font-serif">Pledge Date</th>
-                  <th className="py-4 px-4 font-bold font-serif">Pawner Name</th>
-                  <th className="py-4 px-4 font-bold font-serif">Mobile</th>
-                  <th className="py-4 px-4 font-bold font-serif">Ornament</th>
-                  <th className="py-4 px-4 font-bold font-serif text-right">Net Wt</th>
-                  <th className="py-4 px-4 font-bold font-serif text-right">Principal</th>
-                  <th className="py-4 px-4 font-bold font-serif text-center">Status</th>
-                  <th className="py-4 px-4 font-bold font-serif">Release Date</th>
-                  <th className="py-4 px-4 font-bold font-serif text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredPledges.map((item) => {
-                  const isReleased = item.status === "RELEASED";
-                  const payDetails = parsePledgePaymentDetails(item.customer_name);
-                  const cleanName = payDetails.cleanName;
-                  const accountObj = UPI_ACCOUNT_OPTIONS.find(a => a.key === payDetails.upiAccount);
-                  const accountLabel = accountObj ? accountObj.label.replace("🏦 ", "").replace("👤 ", "") : payDetails.upiAccount;
+          <>
+            {/* ─── MOBILE CARD VIEW (hidden on md+) ─── */}
+            <div className="block md:hidden divide-y divide-amber-50">
+              {filteredPledges.map((item) => {
+                const isReleased = item.status === "RELEASED";
+                const payDetails = parsePledgePaymentDetails(item.customer_name);
+                const cleanName = payDetails.cleanName;
+                return (
+                  <div key={item.id} className={`p-3 ${isReleased ? "bg-emerald-50/20" : "bg-white"}`}>
+                    {/* Top row: pledge no + status badge */}
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[10px] font-black text-amber-800/60 font-mono uppercase tracking-wider">{item.pledge_no}</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
+                        isReleased ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-red-100 text-red-800 border border-red-200"
+                      }`}>
+                        {isReleased ? "Released" : "Active"}
+                      </span>
+                    </div>
 
-                  return (
-                    <tr key={item.id} className="border-b border-amber-50 hover:bg-amber-50/10 transition-colors">
-                      <td className="py-4.5 px-4 font-bold text-amber-950 font-mono">{item.pledge_no}</td>
-                      <td className="py-4.5 px-4 font-mono text-amber-900">{item.date || item.due_date ? formatDateDMY(item.date || getPledgeDateFromDueDate(item.due_date)) : ""}</td>
-                      <td className="py-4.5 px-4">
-                        <div className="flex items-center gap-3">
-                          {item.customer_photo ? (
-                            <img
-                              src={item.customer_photo}
-                              alt="Customer"
-                              className="w-8 h-8 rounded-full object-cover border border-amber-250 cursor-zoom-in flex-shrink-0"
-                              onClick={() => setZoomPhoto({ url: item.customer_photo!, title: `${cleanName}'s Photo` })}
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500/60 text-[10px] flex-shrink-0 select-none">
-                              👤
-                            </div>
-                          )}
-                          <div className="flex flex-col">
-                            <span className="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
-                              {payDetails.method === "UPI" && (
-                                <span className="bg-blue-100 text-blue-900 text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1 shadow-xs" title={`Debited via UPI from ${accountLabel}`}>
-                                  📱 UPI <span className="text-[8px] font-semibold opacity-90 font-mono">({accountLabel})</span>
+                    {/* Name row */}
+                    <button
+                      type="button"
+                      onClick={() => handleViewCustomerProfile(item)}
+                      className="text-left w-full mb-0.5"
+                    >
+                      <div className="font-black text-sm text-amber-950 leading-tight">{cleanName}</div>
+                      {item.pawner_relation_name && (
+                        <div className="text-[10px] text-amber-700/70 font-serif">{item.pawner_relation} {item.pawner_relation_name}</div>
+                      )}
+                    </button>
+
+                    {/* Ornament + Date row */}
+                    <div className="flex items-center justify-between text-xs mt-1 mb-2">
+                      <span className="text-amber-800/80 font-medium truncate max-w-[55%]">💍 {item.ornament}</span>
+                      <span className="text-amber-700/60 font-mono text-[10px]">{item.date || getPledgeDateFromDueDate(item.due_date) ? formatDateDMY(item.date || getPledgeDateFromDueDate(item.due_date)) : ""}</span>
+                    </div>
+
+                    {/* Amount + Weight row */}
+                    <div className="flex items-center justify-between mb-2.5">
+                      <span className="font-black text-base text-amber-950">{formatCurrency(item.amount)}</span>
+                      <span className="text-xs font-mono text-amber-800/70">{(item.weight || 0).toFixed(2)}g</span>
+                    </div>
+
+                    {/* Action buttons row */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button onClick={() => handleOpenEdit(item)} className="flex-1 py-2 rounded-lg border border-amber-200 text-amber-700 bg-amber-50 text-xs font-bold flex items-center justify-center gap-1" title="Edit">
+                        <Pencil size={12} /> Edit
+                      </button>
+                      <button onClick={() => onSelectPrintPledge(item)} className="flex-1 py-2 rounded-lg border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1" title="Print">
+                        <Printer size={12} /> Print
+                      </button>
+                      {!isReleased && (
+                        <button onClick={() => handleOpenBandaModal(item)} className="flex-1 py-2 rounded-lg border border-amber-200 text-amber-700 bg-amber-50 text-xs font-bold flex items-center justify-center gap-1" title="Banda">
+                          <Coins size={12} /> Banda
+                        </button>
+                      )}
+                      {!isReleased && (
+                        <button onClick={() => handleOpenReleaseModal(item)} className="flex-1 py-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-xs font-bold flex items-center justify-center gap-1" title="Release">
+                          <CheckCircle size={12} /> Release
+                        </button>
+                      )}
+                      {isReleased && (
+                        <button onClick={() => handleRevertRelease(item)} className="flex-1 py-2 rounded-lg border border-amber-200 text-amber-800 text-xs font-bold flex items-center justify-center gap-1" title="Revert">
+                          <Undo2 size={12} /> Revert
+                        </button>
+                      )}
+                      <button onClick={() => handleOpenLedgerModal(item)} className="p-2 rounded-lg border border-blue-200 text-blue-700 bg-blue-50" title="Ledger">
+                        <BookOpen size={13} />
+                      </button>
+                      <button onClick={() => handleOpenWhatsAppReminder(item)} className="p-2 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 text-xs font-bold">
+                        💬
+                      </button>
+                      <button onClick={() => handleDeletePledge(item)} className="p-2 rounded-lg border border-red-100 text-red-600 hover:bg-red-50">
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ─── DESKTOP TABLE VIEW (hidden on mobile) ─── */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-amber-100 bg-amber-50/20" style={{ color: "#8B6914" }}>
+                    <th className="py-4 px-4 font-bold font-serif">Pledge No</th>
+                    <th className="py-4 px-4 font-bold font-serif">Pledge Date</th>
+                    <th className="py-4 px-4 font-bold font-serif">Pawner Name</th>
+                    <th className="py-4 px-4 font-bold font-serif">Mobile</th>
+                    <th className="py-4 px-4 font-bold font-serif">Ornament</th>
+                    <th className="py-4 px-4 font-bold font-serif text-right">Net Wt</th>
+                    <th className="py-4 px-4 font-bold font-serif text-right">Principal</th>
+                    <th className="py-4 px-4 font-bold font-serif text-center">Status</th>
+                    <th className="py-4 px-4 font-bold font-serif">Release Date</th>
+                    <th className="py-4 px-4 font-bold font-serif text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredPledges.map((item) => {
+                    const isReleased = item.status === "RELEASED";
+                    const payDetails = parsePledgePaymentDetails(item.customer_name);
+                    const cleanName = payDetails.cleanName;
+                    const accountObj = UPI_ACCOUNT_OPTIONS.find(a => a.key === payDetails.upiAccount);
+                    const accountLabel = accountObj ? accountObj.label.replace("🏦 ", "").replace("👤 ", "") : payDetails.upiAccount;
+
+                    return (
+                      <tr key={item.id} className="border-b border-amber-50 hover:bg-amber-50/10 transition-colors">
+                        <td className="py-4.5 px-4 font-bold text-amber-950 font-mono">{item.pledge_no}</td>
+                        <td className="py-4.5 px-4 font-mono text-amber-900">{item.date || item.due_date ? formatDateDMY(item.date || getPledgeDateFromDueDate(item.due_date)) : ""}</td>
+                        <td className="py-4.5 px-4">
+                          <div className="flex items-center gap-3">
+                            {item.customer_photo ? (
+                              <img
+                                src={item.customer_photo}
+                                alt="Customer"
+                                className="w-8 h-8 rounded-full object-cover border border-amber-250 cursor-zoom-in flex-shrink-0"
+                                onClick={() => setZoomPhoto({ url: item.customer_photo!, title: `${cleanName}'s Photo` })}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500/60 text-[10px] flex-shrink-0 select-none">
+                                👤
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="font-bold text-amber-950 flex items-center gap-1.5 flex-wrap">
+                                {payDetails.method === "UPI" && (
+                                  <span className="bg-blue-100 text-blue-900 text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1 shadow-xs" title={`Debited via UPI from ${accountLabel}`}>
+                                    📱 UPI <span className="text-[8px] font-semibold opacity-90 font-mono">({accountLabel})</span>
+                                  </span>
+                                )}
+                                {payDetails.method === "OTHER" && (
+                                  <span className="bg-purple-100 text-purple-800 text-[9px] px-1.5 py-0.5 rounded font-bold">Other</span>
+                                )}
+                                {payDetails.method === "SPLIT" && (
+                                  <span className="bg-emerald-100 text-emerald-900 text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1" title={`Split: Cash ₹${payDetails.splitCash} + UPI ₹${payDetails.splitUpi} (${accountLabel})`}>
+                                    🥞 Split <span className="text-[8px] font-semibold opacity-90">({payDetails.splitCash ? `₹${payDetails.splitCash} Cash` : ''} + UPI {accountLabel})</span>
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleViewCustomerProfile(item)}
+                                  className="font-bold text-amber-950 hover:text-amber-600 hover:underline text-left outline-none transition-colors"
+                                >
+                                  {cleanName}
+                                </button>
+                              </span>
+                              {item.pawner_relation_name && (
+                                <span className="text-[10px] text-amber-800/60 font-serif">
+                                  {item.pawner_relation} {item.pawner_relation_name}
                                 </span>
                               )}
-                              {payDetails.method === "OTHER" && (
-                                <span className="bg-purple-100 text-purple-800 text-[9px] px-1.5 py-0.5 rounded font-bold">Other</span>
-                              )}
-                              {payDetails.method === "SPLIT" && (
-                                <span className="bg-emerald-100 text-emerald-900 text-[9px] px-1.5 py-0.5 rounded font-bold flex items-center gap-1" title={`Split: Cash ₹${payDetails.splitCash} + UPI ₹${payDetails.splitUpi} (${accountLabel})`}>
-                                  🥞 Split <span className="text-[8px] font-semibold opacity-90">({payDetails.splitCash ? `₹${payDetails.splitCash} Cash` : ''} + UPI {accountLabel})</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4.5 px-4 font-mono text-amber-900">{item.mobile || "—"}</td>
+                        <td className="py-4.5 px-4">
+                          <div className="flex items-center gap-3">
+                            {item.item_photo ? (
+                              <img
+                                src={item.item_photo}
+                                alt="Item"
+                                className="w-8 h-8 rounded-lg object-cover border border-amber-250 cursor-zoom-in flex-shrink-0"
+                                onClick={() => setZoomPhoto({ url: item.item_photo!, title: `${item.ornament} Photo` })}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500/60 text-[10px] flex-shrink-0 select-none">
+                                💍
+                              </div>
+                            )}
+                            <div className="flex flex-col text-left">
+                              <span className="text-amber-900 font-semibold leading-tight">
+                                {item.ornament} {item.quantity ? `(${item.quantity} pc)` : ""}
+                              </span>
+                              {item.ornament_2 && (
+                                <span className="text-[10px] text-amber-800/75 leading-none mt-0.5">
+                                  {item.ornament_2} {item.quantity_2 ? `(${item.quantity_2} pc)` : ""}
                                 </span>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => handleViewCustomerProfile(item)}
-                                className="font-bold text-amber-950 hover:text-amber-600 hover:underline text-left outline-none transition-colors"
-                              >
-                                {cleanName}
-                              </button>
-                            </span>
-                            {item.pawner_relation_name && (
-                              <span className="text-[10px] text-amber-800/60 font-serif">
-                                {item.pawner_relation} {item.pawner_relation_name}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4.5 px-4 font-mono text-amber-900">{item.mobile || "—"}</td>
-                      <td className="py-4.5 px-4">
-                        <div className="flex items-center gap-3">
-                          {item.item_photo ? (
-                            <img
-                              src={item.item_photo}
-                              alt="Item"
-                              className="w-8 h-8 rounded-lg object-cover border border-amber-250 cursor-zoom-in flex-shrink-0"
-                              onClick={() => setZoomPhoto({ url: item.item_photo!, title: `${item.ornament} Photo` })}
-                            />
-                          ) : (
-                            <div className="w-8 h-8 rounded-lg bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500/60 text-[10px] flex-shrink-0 select-none">
-                              💍
+                              {item.ornament_3 && (
+                                <span className="text-[10px] text-amber-800/75 leading-none mt-0.5">
+                                  {item.ornament_3} {item.quantity_3 ? `(${item.quantity_3} pc)` : ""}
+                                </span>
+                              )}
                             </div>
-                          )}
-                          <div className="flex flex-col text-left">
-                            <span className="text-amber-900 font-semibold leading-tight">
-                              {item.ornament} {item.quantity ? `(${item.quantity} pc)` : ""}
-                            </span>
-                            {item.ornament_2 && (
-                              <span className="text-[10px] text-amber-800/75 leading-none mt-0.5">
-                                {item.ornament_2} {item.quantity_2 ? `(${item.quantity_2} pc)` : ""}
-                              </span>
-                            )}
-                            {item.ornament_3 && (
-                              <span className="text-[10px] text-amber-800/75 leading-none mt-0.5">
-                                {item.ornament_3} {item.quantity_3 ? `(${item.quantity_3} pc)` : ""}
-                              </span>
-                            )}
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-4.5 px-4 text-right font-mono font-bold text-amber-950">{(item.weight || 0).toFixed(3)} g</td>
-                      <td className="py-4.5 px-4 text-right font-mono font-black text-amber-950">{formatCurrency(item.amount)}</td>
-                      <td className="py-4.5 px-4 text-center">
-                        <span
-                          className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
-                            isReleased
-                              ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                              : "bg-red-100 text-red-800 border border-red-200"
-                          }`}
-                        >
-                          {isReleased ? "Released" : "Active"}
-                        </span>
-                      </td>
-                      <td className="py-4.5 px-4 font-mono text-amber-900">{formatDateDMY(item.release_date)}</td>
-                      <td className="py-4.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleOpenEdit(item)}
-                            className="p-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
-                            title="Edit Pledge"
+                        </td>
+                        <td className="py-4.5 px-4 text-right font-mono font-bold text-amber-950">{(item.weight || 0).toFixed(3)} g</td>
+                        <td className="py-4.5 px-4 text-right font-mono font-black text-amber-950">{formatCurrency(item.amount)}</td>
+                        <td className="py-4.5 px-4 text-center">
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase ${
+                              isReleased
+                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                : "bg-red-100 text-red-800 border border-red-200"
+                            }`}
                           >
-                            <Pencil size={13} />
-                          </button>
-                          <button
-                            onClick={() => onSelectPrintPledge(item)}
-                            className="p-1.5 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 hover:border-amber-400 transition-colors"
-                            title="Print Pooja Jewellers Pink Voucher"
-                          >
-                            <Printer size={13} />
-                          </button>
-                          {isReleased ? (
-                            <>
+                            {isReleased ? "Released" : "Active"}
+                          </span>
+                        </td>
+                        <td className="py-4.5 px-4 font-mono text-amber-900">{formatDateDMY(item.release_date)}</td>
+                        <td className="py-4.5 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenEdit(item)}
+                              className="p-1.5 rounded-lg border border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                              title="Edit Pledge"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              onClick={() => onSelectPrintPledge(item)}
+                              className="p-1.5 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 hover:border-amber-400 transition-colors"
+                              title="Print Pooja Jewellers Pink Voucher"
+                            >
+                              <Printer size={13} />
+                            </button>
+                            {isReleased ? (
+                              <>
+                                <button
+                                  onClick={() => handleOpenWhatsAppRelease(item)}
+                                  className="p-1.5 rounded-lg border border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition-colors font-bold text-xs"
+                                  title="Send WhatsApp Release Confirmation"
+                                >
+                                  💬
+                                </button>
+                                <button
+                                  onClick={() => handleRevertRelease(item)}
+                                  className="p-1.5 rounded-lg border border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors"
+                                  title="Revert Release (Make Active again)"
+                                >
+                                  <Undo2 size={13} />
+                                </button>
+                              </>
+                            ) : (
                               <button
-                                onClick={() => handleOpenWhatsAppRelease(item)}
+                                onClick={() => handleOpenWhatsAppReminder(item)}
                                 className="p-1.5 rounded-lg border border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition-colors font-bold text-xs"
-                                title="Send WhatsApp Release Confirmation"
+                                title="Send WhatsApp Interest Reminder"
                               >
                                 💬
                               </button>
-                              <button
-                                onClick={() => handleRevertRelease(item)}
-                                className="p-1.5 rounded-lg border border-amber-300 text-amber-800 bg-amber-50 hover:bg-amber-100 transition-colors"
-                                title="Revert Release (Make Active again)"
-                              >
-                                <Undo2 size={13} />
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => handleOpenWhatsAppReminder(item)}
-                              className="p-1.5 rounded-lg border border-emerald-300 text-emerald-800 bg-emerald-50 hover:bg-emerald-100 transition-colors font-bold text-xs"
-                              title="Send WhatsApp Interest Reminder"
-                            >
-                              💬
-                            </button>
-                          )}
+                            )}
 
-                          {!isReleased && (
-                            <>
-                              <button
-                                onClick={() => handleOpenBandaModal(item)}
-                                className="p-1.5 rounded-lg border border-amber-250 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
-                                title="Banda / Interest Taken"
-                              >
-                                <Coins size={13} />
-                              </button>
-                              <button
-                                onClick={() => handleOpenReleaseModal(item)}
-                                className="p-1.5 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors animate-pulse"
-                                title="Release Pledge (Chhudana)"
-                              >
-                                <CheckCircle size={13} />
-                              </button>
-                            </>
-                          )}
-                          <button
-                            onClick={() => handleOpenLedgerModal(item)}
-                            className="p-1.5 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
-                            title="Pledge Payment Ledger"
-                          >
-                            <BookOpen size={13} />
-                          </button>
-                          <button
-                            onClick={() => handleDeletePledge(item)}
-                            className="p-1.5 rounded-lg border border-red-100 text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete Pledge record"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            {!isReleased && (
+                              <>
+                                <button
+                                  onClick={() => handleOpenBandaModal(item)}
+                                  className="p-1.5 rounded-lg border border-amber-250 text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+                                  title="Banda / Interest Taken"
+                                >
+                                  <Coins size={13} />
+                                </button>
+                                <button
+                                  onClick={() => handleOpenReleaseModal(item)}
+                                  className="p-1.5 rounded-lg border border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors animate-pulse"
+                                  title="Release Pledge (Chhudana)"
+                                >
+                                  <CheckCircle size={13} />
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => handleOpenLedgerModal(item)}
+                              className="p-1.5 rounded-lg border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors"
+                              title="Pledge Payment Ledger"
+                            >
+                              <BookOpen size={13} />
+                            </button>
+                            <button
+                              onClick={() => handleDeletePledge(item)}
+                              className="p-1.5 rounded-lg border border-red-100 text-red-600 hover:bg-red-50 transition-colors"
+                              title="Delete Pledge record"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

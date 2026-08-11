@@ -229,114 +229,85 @@ export default function SystemLogsView({ showNotification }: SystemLogsViewProps
   }
 
   return (
-    <div style={{ padding: "24px 30px", background: "#FAF8F5", minHeight: "calc(100vh - 80px)" }}>
+    <div className="px-3 py-4 sm:px-6 sm:py-6" style={{ background: "#FAF8F5", minHeight: "calc(100vh - 80px)" }}>
       {/* Page Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
         <div>
-          <h1
-            style={{
-              fontFamily: "Georgia, serif",
-              fontWeight: 900,
-              fontSize: 28,
-              color: "#2D1B0E",
-              margin: 0,
-              display: "flex",
-              alignItems: "center",
-              gap: 10
-            }}
-          >
+          <h1 className="font-serif font-black text-xl sm:text-2xl" style={{ color: "#2D1B0E", margin: 0 }}>
             System Audit Logs
           </h1>
-          <p style={{ margin: 0, fontSize: 13, color: "#8B7355", marginTop: 4 }}>
-            Complete audit trail of system modifications, creations, and deletions.
+          <p className="text-xs sm:text-sm mt-1" style={{ margin: 0, color: "#8B7355" }}>
+            Complete audit trail of modifications, creations, and deletions.
           </p>
         </div>
-        
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="flex gap-2">
           <button
             onClick={() => loadLogs(password)}
-            style={{
-              background: "white",
-              border: "1.5px solid #8B6914",
-              color: "#8B6914",
-              borderRadius: 12,
-              padding: "10px 16px",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 6
-            }}
-            className="hover:bg-amber-50/50"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold hover:bg-amber-50/50 transition-colors"
+            style={{ background: "white", border: "1.5px solid #8B6914", color: "#8B6914", cursor: "pointer" }}
           >
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-            Refresh Logs
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+            <span className="hidden sm:inline">Refresh</span>
           </button>
-          
           <button
             onClick={handleLogout}
-            style={{
-              background: "#ef4444",
-              color: "white",
-              border: "none",
-              borderRadius: 12,
-              padding: "10px 16px",
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: "pointer"
-            }}
-            className="hover:bg-red-600"
+            className="px-3 py-2 rounded-xl text-xs font-bold text-white"
+            style={{ background: "#ef4444", border: "none", cursor: "pointer" }}
           >
-            Lock Screen
+            🔒 <span className="hidden sm:inline">Lock</span>
           </button>
         </div>
       </div>
 
       {/* Main Container Card */}
-      <div
-        style={{
-          background: "white",
-          borderRadius: 20,
-          border: "1px solid rgba(0,0,0,0.06)",
-          boxShadow: "0 4px 20px rgba(0,0,0,0.03)",
-          overflow: "hidden"
-        }}
-      >
+      <div className="bg-white rounded-2xl border overflow-hidden" style={{ border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
         {/* Filter bar */}
-        <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(0,0,0,0.05)", background: "#FFFBF7" }}>
-          <div style={{ position: "relative", maxWidth: 400 }}>
-            <Search
-              size={18}
-              color="#8B7355"
-              style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)" }}
-            />
+        <div className="px-3 py-3 sm:px-6 sm:py-4" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)", background: "#FFFBF7" }}>
+          <div style={{ position: "relative" }}>
+            <Search size={16} color="#8B7355" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
             <input
               type="text"
-              placeholder="Search logs by keyword, action, or date..."
+              placeholder="Search logs..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              style={{ ...INPUT, paddingLeft: 42, background: "white" }}
+              style={{ ...INPUT, paddingLeft: 38, background: "white", fontSize: 13 }}
             />
           </div>
         </div>
 
-        {/* Logs Table */}
-        <div style={{ overflowX: "auto" }}>
+        {/* Mobile: Card List */}
+        <div className="block sm:hidden divide-y" style={{ borderColor: "rgba(0,0,0,0.04)" }}>
+          {filteredLogs.length > 0 ? filteredLogs.map((log) => {
+            const badgeStyle = getActionBadgeStyle(log.action);
+            return (
+              <div key={log.id} className="p-3">
+                <div className="flex items-center justify-between mb-1">
+                  <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.5px", padding: "2px 7px", borderRadius: 5, display: "inline-block", ...badgeStyle }}>
+                    {log.action}
+                  </span>
+                  <span className="font-mono text-[10px]" style={{ color: "#8B7355" }}>{log.timestamp}</span>
+                </div>
+                <p className="text-xs font-medium mt-1" style={{ color: "#4A3B32", margin: 0 }}>{log.details}</p>
+              </div>
+            );
+          }) : (
+            <div className="py-12 text-center">
+              <FileSpreadsheet size={32} color="#c8b090" style={{ margin: "0 auto 8px auto" }} />
+              <p className="text-sm font-bold" style={{ color: "#8B7355" }}>{loading ? "Loading..." : "No logs found."}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop: Table */}
+        <div className="hidden sm:block" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
             <thead>
               <tr style={{ background: "#F5EFE6", borderBottom: "2px solid rgba(139,105,20,0.1)" }}>
                 <th style={{ padding: "14px 24px", fontSize: 12, fontWeight: 800, color: "#5C4033", width: 180 }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <Clock size={12} /> TIMESTAMP
-                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Clock size={12} /> TIMESTAMP</span>
                 </th>
-                <th style={{ padding: "14px 24px", fontSize: 12, fontWeight: 800, color: "#5C4033", width: 220 }}>
-                  ACTION CATEGORY
-                </th>
-                <th style={{ padding: "14px 24px", fontSize: 12, fontWeight: 800, color: "#5C4033" }}>
-                  AUDIT DETAILS
-                </th>
+                <th style={{ padding: "14px 24px", fontSize: 12, fontWeight: 800, color: "#5C4033", width: 220 }}>ACTION CATEGORY</th>
+                <th style={{ padding: "14px 24px", fontSize: 12, fontWeight: 800, color: "#5C4033" }}>AUDIT DETAILS</th>
               </tr>
             </thead>
             <tbody>
@@ -344,32 +315,12 @@ export default function SystemLogsView({ showNotification }: SystemLogsViewProps
                 filteredLogs.map((log) => {
                   const badgeStyle = getActionBadgeStyle(log.action);
                   return (
-                    <tr
-                      key={log.id}
-                      style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}
-                      className="hover:bg-amber-50/20 transition-colors"
-                    >
-                      <td style={{ padding: "16px 24px", fontSize: 13, color: "#2D1B0E", fontWeight: 600, fontFamily: "monospace" }}>
-                        {log.timestamp}
-                      </td>
+                    <tr key={log.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }} className="hover:bg-amber-50/20 transition-colors">
+                      <td style={{ padding: "16px 24px", fontSize: 13, color: "#2D1B0E", fontWeight: 600, fontFamily: "monospace" }}>{log.timestamp}</td>
                       <td style={{ padding: "16px 24px" }}>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 800,
-                            letterSpacing: "0.5px",
-                            padding: "3px 8px",
-                            borderRadius: 6,
-                            display: "inline-block",
-                            ...badgeStyle
-                          }}
-                        >
-                          {log.action}
-                        </span>
+                        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.5px", padding: "3px 8px", borderRadius: 6, display: "inline-block", ...badgeStyle }}>{log.action}</span>
                       </td>
-                      <td style={{ padding: "16px 24px", fontSize: 13.5, color: "#4A3B32", fontWeight: 500 }}>
-                        {log.details}
-                      </td>
+                      <td style={{ padding: "16px 24px", fontSize: 13.5, color: "#4A3B32", fontWeight: 500 }}>{log.details}</td>
                     </tr>
                   );
                 })
@@ -377,12 +328,7 @@ export default function SystemLogsView({ showNotification }: SystemLogsViewProps
                 <tr>
                   <td colSpan={3} style={{ padding: "64px 24px", textAlign: "center" }}>
                     <FileSpreadsheet size={40} color="#c8b090" style={{ margin: "0 auto 12px auto" }} />
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#8B7355" }}>
-                      {loading ? "Loading logs..." : "No system logs found matching the filter."}
-                    </p>
-                    <p style={{ margin: 0, fontSize: 12, color: "#9E8B78", marginTop: 4 }}>
-                      {loading ? "Retrieving from database..." : "Try clearing the search query or perform some actions first."}
-                    </p>
+                    <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: "#8B7355" }}>{loading ? "Loading logs..." : "No system logs found."}</p>
                   </td>
                 </tr>
               )}
