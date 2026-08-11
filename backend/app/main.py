@@ -560,6 +560,15 @@ def add_pledge_entry(entry: schemas.PledgeEntryCreate, db: Session = Depends(get
     log_system_action(db, "PLEDGE_CREATE", f"Added Pledge: {entry.customer_name} | {entry.ornament} | Wt: {entry.weight}g | ₹{entry.amount}", module="GIRVI")
     return res
 
+@app.post("/api/pledges/bulk")
+def bulk_create_pledges(payload: List[schemas.PledgeEntryCreate], db: Session = Depends(get_db)):
+    created = []
+    for item in payload:
+        db_item = crud.create_pledge_entry(db, item)
+        created.append(db_item)
+    log_system_action(db, "PLEDGE_BULK_CREATE", f"Bulk imported {len(created)} pledges.", module="GIRVI")
+    return {"success": True, "count": len(created)}
+
 @app.put("/api/pledge/{entry_id}", response_model=schemas.PledgeEntry)
 def update_pledge_entry(entry_id: int, entry_update: schemas.PledgeEntryUpdate, db: Session = Depends(get_db)):
     res = crud.update_pledge_entry(db, entry_id, entry_update)

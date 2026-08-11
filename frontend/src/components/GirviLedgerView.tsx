@@ -150,7 +150,194 @@ export default function GirviLedgerView({
     method: "CASH",
   });
 
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [parsedRecords, setParsedRecords] = useState<any[]>([]);
+
+  const handleExportCSV = () => {
+    const headers = ["Pledge No", "Date", "Customer Name", "Mobile", "Address", "Ornament", "Weight (g)", "Principal Amount (₹)", "Status", "Release Date"];
+    const rows = pledges.map(p => {
+      const payDetails = parsePledgePaymentDetails(p.customer_name);
+      return [
+        p.pledge_no || "",
+        p.date || "",
+        payDetails.cleanName || "",
+        p.mobile || "",
+        p.address || "",
+        p.ornament || "",
+        p.net_weight || p.weight || 0,
+        p.amount || 0,
+        p.status || "",
+        p.release_date || ""
+      ];
+    });
+    
+    // Add BOM header to support UTF-8 characters correctly in Excel
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `girvi_ledger_export_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showNotification("Ledger exported successfully!", "success");
+  };
+
+  const handleCSVFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportError("");
+    setParsedRecords([]);
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+        if (lines.length <= 1) {
+          setImportError("CSV file is empty or missing data rows.");
+          return;
+        }
+
+        const parseCSVLine = (line: string) => {
+          const result = [];
+          let current = "";
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = "";
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        };
+
+        const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().replace(/[\s_()₹]/g, ""));
+        
+        const pledgeNoIdx = headers.findIndex(h => h.includes("pledge") || h.includes("no") || h.includes("num"));
+        const dateIdx = headers.findIndex(h => h.includes("date") || h.includes("registered"));
+        const nameIdx = headers.findIndex(h => h.includes("name") || h.includes("customer") || h.includes("owner") || h.includes("pawner"));
+        const mobileIdx = headers.findIndex(h => h.includes("mobile") || h.includes("phone") || h.includes("contact"));
+        const addressIdx = headers.findIndex(h => h.includes("address") || h.includes("location"));
+        const ornamentIdx = headers.findIndex(h => h.includes("ornament") || h.includes("item") || h.includes("article"));
+        const weightIdx = headers.findIndex(h => h.includes("weight") || h.includes("wt") || h.includes("gram"));
+        const amountIdx = headers.findIndex(h => h.includes("amount") || h.includes("principal") || h.includes("loan") || h.includes("price"));
+        const statusIdx = headers.findIndex(h => h.includes("status"));
+
+        if (nameIdx === -1 || amountIdx === -1 || ornamentIdx === -1) {
+          setImportError("Required columns (Customer Name, Ornament, Principal/Amount) could not be identified.");
+          return;
+        }
+
+        const records: any[] = [];
+        for (let i = 1; i < lines.length; i++) {
+          const cols = parseCSVLine(lines[i]);
+          if (cols.length < Math.max(nameIdx, amountIdx, ornamentIdx)) continue;
+
+          const pledge_no = pledgeNoIdx !== -1 && cols[pledgeNoIdx] ? cols[pledgeNoIdx] : `IMP-${Date.now().toString().slice(-4)}-${i}`;
+          const date = dateIdx !== -1 && cols[dateIdx] ? cols[dateIdx] : new Date().toISOString().split("T")[0];
+          const customer_name = cols[nameIdx] || "";
+          const mobile = mobileIdx !== -1 ? cols[mobileIdx] : "";
+          const address = addressIdx !== -1 ? cols[addressIdx] : "";
+          const ornament = cols[ornamentIdx] || "";
+          const weight = weightIdx !== -1 ? parseFloat(cols[weightIdx]) || 0.0 : 0.0;
+          const amount = amountIdx !== -1 ? parseFloat(cols[amountIdx]) || 0.0 : 0.0;
+          const status = statusIdx !== -1 ? cols[statusIdx].toUpperCase() : "ACTIVE";
+
+          if (!customer_name || amount <= 0 || !ornament) continue;
+
+          records.push({
+            pledge_no,
+            date,
+            customer_name,
+            mobile,
+            address,
+            ornament,
+            weight,
+            amount,
+            status: status === "RELEASED" ? "RELEASED" : "ACTIVE",
+            interest_rate: 3.0,
+            is_repledged: 0,
+            repledged_amount: 0,
+            interest_received_till_date: 0,
+            remarks: "Imported via CSV file upload"
+          });
+        }
+
+        if (records.length === 0) {
+          setImportError("No valid rows could be parsed. Check that amounts are positive numbers.");
+        } else {
+          setParsedRecords(records);
+        }
+      } catch (err: any) {
+        setImportError("Error reading file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImportSubmit = async () => {
+    if (parsedRecords.length === 0) return;
+    setImporting(true);
+    try {
+      const response = await fetch(`${API_BASE}/pledges/bulk`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+        },
+        body: JSON.stringify(parsedRecords)
+      });
+      
+      if (response.ok) {
+        showNotification(`Successfully imported ${parsedRecords.length} pledges!`, "success");
+        setShowImportModal(false);
+        setParsedRecords([]);
+        loadPledges();
+      } else {
+        const errData = await response.json();
+        setImportError(errData.detail || "Bulk import endpoint failed.");
+      }
+    } catch (err: any) {
+      setImportError("Failed to connect to backend import API: " + err.message);
+    } finally {
+      setImporting(false);
+    }
+  };
+
   const [zoomPhoto, setZoomPhoto] = useState<{ url: string; title: string } | null>(null);
+
+  // Customer Profile Modal States
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileCustomer, setProfileCustomer] = useState<{
+    name: string;
+    mobile: string;
+    address: string;
+    relation: string;
+    relationName: string;
+  } | null>(null);
+
+  const handleViewCustomerProfile = (pledge: PledgeEntry) => {
+    const payDetails = parsePledgePaymentDetails(pledge.customer_name);
+    setProfileCustomer({
+      name: payDetails.cleanName,
+      mobile: pledge.mobile || "",
+      address: pledge.address || "",
+      relation: pledge.pawner_relation || "",
+      relationName: pledge.pawner_relation_name || "",
+    });
+    setShowProfileModal(true);
+  };
 
   // WhatsApp Preview Modal State
   const [whatsappModal, setWhatsappModal] = useState<{
@@ -930,6 +1117,22 @@ export default function GirviLedgerView({
               🧮 Calculator
             </button>
             <button
+              type="button"
+              onClick={handleExportCSV}
+              className="px-3.5 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
+              title="Export Ledger to Excel / CSV"
+            >
+              📤 Export
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowImportModal(true)}
+              className="px-3.5 py-2.5 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors flex items-center gap-1.5 font-bold text-xs"
+              title="Import Pledges from Excel / CSV"
+            >
+              📥 Import
+            </button>
+            <button
               onClick={onSwitchToForm}
               className="px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-wide transition-all text-white flex items-center justify-center gap-1.5"
               style={{
@@ -1111,7 +1314,13 @@ export default function GirviLedgerView({
                                   🥞 Split <span className="text-[8px] font-semibold opacity-90">({payDetails.splitCash ? `₹${payDetails.splitCash} Cash` : ''} + UPI {accountLabel})</span>
                                 </span>
                               )}
-                              {cleanName}
+                              <button
+                                type="button"
+                                onClick={() => handleViewCustomerProfile(item)}
+                                className="font-bold text-amber-950 hover:text-amber-600 hover:underline text-left outline-none transition-colors"
+                              >
+                                {cleanName}
+                              </button>
                             </span>
                             {item.pawner_relation_name && (
                               <span className="text-[10px] text-amber-800/60 font-serif">
@@ -2264,6 +2473,273 @@ export default function GirviLedgerView({
                   <span>📲 Send via WhatsApp</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── CSV IMPORT PREVIEW MODAL ── */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center px-4" style={{ background: "rgba(45,27,14,0.45)", backdropFilter: "blur(4px)" }}>
+          <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl overflow-hidden border border-amber-250 flex flex-col max-h-[90vh]">
+            <div style={{ height: 4, background: "linear-gradient(90deg, #d4af37, #c8960c)" }} />
+            <div className="flex items-center justify-between px-6 py-5 border-b border-amber-100 bg-amber-50/15">
+              <div>
+                <h3 className="font-bold text-base text-amber-955 font-serif flex items-center gap-2">
+                  📥 Bulk Import Pledges
+                </h3>
+                <p className="text-xs text-amber-800/60 mt-0.5 font-medium">Select a CSV spreadsheet file to import pledges in bulk.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setParsedRecords([]);
+                  setImportError("");
+                }}
+                className="p-2 rounded-xl hover:bg-amber-50 text-amber-800 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 flex-1 text-left">
+              <div className="border-2 border-dashed border-amber-200 hover:border-amber-400 transition-colors rounded-2xl p-6 text-center bg-amber-50/5">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVFileChange}
+                  className="hidden"
+                  id="csv-file-upload-input"
+                />
+                <label htmlFor="csv-file-upload-input" className="cursor-pointer flex flex-col items-center">
+                  <span className="text-3xl mb-2">📄</span>
+                  <span className="text-xs font-bold text-amber-900">Click to upload or drag & drop CSV file</span>
+                  <span className="text-[10px] text-amber-800/50 mt-1">Requires headers: Customer Name, Ornament, Amount/Principal</span>
+                </label>
+              </div>
+
+              {importError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-750 text-xs rounded-xl font-bold flex items-start gap-2">
+                  <span>⚠️</span>
+                  <span>{importError}</span>
+                </div>
+              )}
+
+              {parsedRecords.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center border-b border-amber-100 pb-1.5">
+                    <h4 className="font-bold font-serif text-amber-955 text-xs">
+                      🔍 Preview Imported Data ({parsedRecords.length} records parsed)
+                    </h4>
+                    <span className="text-[10px] bg-emerald-50 text-emerald-805 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">Valid</span>
+                  </div>
+                  <div className="border border-amber-100 rounded-xl overflow-hidden max-h-[200px] overflow-y-auto">
+                    <table className="w-full text-[10px] text-left border-collapse">
+                      <thead>
+                        <tr className="bg-amber-50/30 text-amber-900 border-b border-amber-100 font-bold font-serif">
+                          <th className="py-2 px-3">Pledge No</th>
+                          <th className="py-2 px-3">Customer Name</th>
+                          <th className="py-2 px-3">Ornament</th>
+                          <th className="py-2 px-3 text-right">Weight (g)</th>
+                          <th className="py-2 px-3 text-right">Principal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-amber-50">
+                        {parsedRecords.map((rec, index) => (
+                          <tr key={index} className="text-amber-955 hover:bg-amber-50/10 font-medium">
+                            <td className="py-2 px-3 font-mono">{rec.pledge_no}</td>
+                            <td className="py-2 px-3 font-bold">{rec.customer_name}</td>
+                            <td className="py-2 px-3">{rec.ornament}</td>
+                            <td className="py-2 px-3 text-right font-mono">{rec.weight.toFixed(2)} g</td>
+                            <td className="py-2 px-3 text-right font-mono font-bold">₹{rec.amount.toLocaleString("en-IN")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-amber-100 flex items-center justify-end gap-3 bg-amber-50/5">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowImportModal(false);
+                  setParsedRecords([]);
+                  setImportError("");
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-amber-900 hover:bg-amber-50 border border-amber-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={parsedRecords.length === 0 || importing}
+                onClick={handleImportSubmit}
+                className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-black rounded-xl shadow-md transition-all flex items-center gap-2"
+                style={{ background: "linear-gradient(135deg,#c8960c,#d4af37)" }}
+              >
+                {importing ? (
+                  <>
+                    <RefreshCw className="animate-spin" size={13} />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <span>📥</span>
+                    Confirm Import
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showProfileModal && profileCustomer && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-end" style={{ background: "rgba(45,27,14,0.4)", backdropFilter: "blur(4px)" }}>
+          <div className="bg-white h-full w-full max-w-lg shadow-2xl flex flex-col relative border-l border-amber-100">
+            <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500" />
+            <div className="flex items-center justify-between px-6 py-5 border-b border-amber-100 bg-amber-50/10">
+              <div>
+                <h3 className="font-bold text-base text-amber-955 font-serif flex items-center gap-2">
+                  👤 Pawner Profile
+                </h3>
+                <p className="text-xs text-amber-800/60 mt-0.5 font-medium">Customer ledger summary and pledge history.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowProfileModal(false);
+                  setProfileCustomer(null);
+                }}
+                className="p-2 rounded-xl hover:bg-amber-50 text-amber-800 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Profile Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              {/* Header Info */}
+              <div className="flex items-start gap-4 bg-amber-50/20 border border-amber-200/50 p-5 rounded-2xl">
+                <div className="w-14 h-14 rounded-full bg-amber-100/60 border border-amber-300 flex items-center justify-center text-amber-600 font-black text-xl select-none flex-shrink-0">
+                  {profileCustomer.name.charAt(0).toUpperCase()}
+                </div>
+                <div className="space-y-1 text-left">
+                  <h4 className="font-bold text-sm text-amber-955">{profileCustomer.name}</h4>
+                  {profileCustomer.relationName && (
+                    <p className="text-xs text-amber-800/70 font-medium">
+                      {profileCustomer.relation}: {profileCustomer.relationName}
+                    </p>
+                  )}
+                  {profileCustomer.mobile && (
+                    <p className="text-xs text-amber-900 font-mono flex items-center gap-1.5">
+                      <span>📱</span> {profileCustomer.mobile}
+                    </p>
+                  )}
+                  {profileCustomer.address && (
+                    <p className="text-xs text-amber-800/80 font-serif leading-snug">
+                      <span>📍</span> {profileCustomer.address}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Statistics Panel */}
+              {(() => {
+                const customerPledges = pledges.filter(p => {
+                  const cleanName = cleanCustomerName(p.customer_name);
+                  const hasSamePhone = profileCustomer.mobile && p.mobile === profileCustomer.mobile;
+                  const hasSameName = cleanName.toLowerCase() === profileCustomer.name.toLowerCase();
+                  return hasSamePhone || hasSameName;
+                });
+
+                const activePledges = customerPledges.filter(p => p.status !== "RELEASED");
+                const closedPledges = customerPledges.filter(p => p.status === "RELEASED");
+                
+                const outstandingAmt = activePledges.reduce((acc, p) => acc + (p.amount || 0), 0);
+                const releasedAmt = closedPledges.reduce((acc, p) => acc + (p.amount || 0), 0);
+
+                let goldWt = 0;
+                let silverWt = 0;
+                
+                customerPledges.forEach(p => {
+                  const isSilver = /silver|chandi|sil/i.test(p.ornament || "");
+                  const wt = p.net_weight || p.weight || 0.0;
+                  if (isSilver) silverWt += wt;
+                  else goldWt += wt;
+                });
+
+                return (
+                  <div className="space-y-4">
+                    <h4 className="font-bold font-serif text-amber-955 text-xs uppercase tracking-wider border-b border-amber-100 pb-1 text-left">
+                      📊 Summary Statistics
+                    </h4>
+                    <div className="grid grid-cols-2 gap-3 text-left">
+                      <div className="bg-white border border-amber-100 p-4 rounded-xl shadow-xs">
+                        <span className="text-[10px] text-amber-800/60 uppercase font-semibold">Total Pledges</span>
+                        <p className="text-lg font-black text-amber-950 font-mono mt-0.5">{customerPledges.length}</p>
+                      </div>
+                      <div className="bg-white border border-amber-100 p-4 rounded-xl shadow-xs">
+                        <span className="text-[10px] text-amber-800/60 uppercase font-semibold">Active Loans</span>
+                        <p className="text-lg font-black text-amber-950 font-mono mt-0.5">{activePledges.length}</p>
+                      </div>
+                      <div className="bg-white border border-amber-100 p-4 rounded-xl shadow-xs">
+                        <span className="text-[10px] text-amber-800/60 uppercase font-semibold">Outstanding Loan</span>
+                        <p className="text-lg font-black text-amber-950 font-mono mt-0.5">₹{outstandingAmt.toLocaleString("en-IN")}</p>
+                      </div>
+                      <div className="bg-white border border-amber-100 p-4 rounded-xl shadow-xs">
+                        <span className="text-[10px] text-amber-800/60 uppercase font-semibold">Released Principal</span>
+                        <p className="text-lg font-black text-emerald-700 font-mono mt-0.5">₹{releasedAmt.toLocaleString("en-IN")}</p>
+                      </div>
+                      <div className="bg-white border border-amber-100 p-4 rounded-xl shadow-xs col-span-2">
+                        <span className="text-[10px] text-amber-800/60 uppercase font-semibold">Accumulated Weight In Custody</span>
+                        <div className="flex gap-4 mt-1 font-mono text-xs font-bold text-amber-950">
+                          <span>🟡 Gold: {goldWt.toFixed(2)} g</span>
+                          <span>⚪ Silver: {silverWt.toFixed(2)} g</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* History List */}
+                    <div className="space-y-3 pt-2">
+                      <h4 className="font-bold font-serif text-amber-955 text-xs uppercase tracking-wider border-b border-amber-100 pb-1 text-left">
+                        📜 Loan & Pledge History
+                      </h4>
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                        {customerPledges.length === 0 ? (
+                          <p className="text-xs text-amber-800/50 italic text-center py-4">No transactions recorded.</p>
+                        ) : (
+                          customerPledges.map(p => {
+                            const isPledgeReleased = p.status === "RELEASED";
+                            return (
+                              <div
+                                key={p.id}
+                                className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-colors ${isPledgeReleased ? 'bg-emerald-50/10 border-emerald-100' : 'bg-amber-50/10 border-amber-100'}`}
+                              >
+                                <div className="text-left space-y-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono font-bold text-amber-955">#{p.pledge_no}</span>
+                                    <span className="text-[10px] text-amber-800/60 font-semibold">{formatDateDMY(p.date || getPledgeDateFromDueDate(p.due_date))}</span>
+                                  </div>
+                                  <div className="text-[11px] text-amber-900 leading-tight font-medium">
+                                    {p.ornament} (Wt: {p.net_weight || p.weight || 0.0}g)
+                                  </div>
+                                </div>
+                                <div className="text-right space-y-1">
+                                  <span className="font-mono font-black text-amber-955 block">₹{p.amount.toLocaleString("en-IN")}</span>
+                                  <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${isPledgeReleased ? 'bg-emerald-100 text-emerald-850' : 'bg-amber-100 text-amber-850'}`}>
+                                    {p.status}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
