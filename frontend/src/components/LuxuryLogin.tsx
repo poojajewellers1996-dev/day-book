@@ -466,7 +466,7 @@ export default function LuxuryLogin({ onLogin }: LuxuryLoginProps) {
               {/* Header */}
               <div className="text-center mb-7">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  <span className="text-2xl">📒</span>
+                  <span className="text-2xl">🏛️</span>
                   <h1
                     className="font-black tracking-wider"
                     style={{
@@ -476,11 +476,11 @@ export default function LuxuryLogin({ onLogin }: LuxuryLoginProps) {
                       letterSpacing: "0.1em",
                     }}
                   >
-                    POTHA BAHI
+                    GIRVI MANAGER
                   </h1>
                 </div>
                 <p style={{ fontSize: "12px", color: "#8B6914", fontWeight: 600, letterSpacing: "0.05em" }}>
-                  Digital Daily Book for Jewellers
+                  Digital Girvi &amp; Bank Re-Pledge Ledger
                 </p>
                 <p style={{ fontSize: "11px", color: "#B8A080", fontStyle: "italic", marginTop: 4 }}>
                   "Every Rupee Accounted, Every Gram Remembered"

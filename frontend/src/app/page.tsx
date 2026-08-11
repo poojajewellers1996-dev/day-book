@@ -626,7 +626,7 @@ export default function Dashboard() {
             </div>
             <div className="leading-tight hidden sm:block">
               <p className="font-black text-sm tracking-wide" style={{ color: "#2D1B0E", fontFamily: "Georgia, serif" }}>
-                POTHA BAHI
+                GIRVI MANAGER
               </p>
               <p className="text-[9px] font-semibold tracking-widest uppercase" style={{ color: "#C8A87A" }}>
                 Pooja Jewellers
@@ -636,9 +636,8 @@ export default function Dashboard() {
         </div>
 
         {/* Centre: Date navigator (Desktop only) */}
-        {["pledges", "pledge_form", "existing_girvi"].includes(activeNav) && (
-          <div
-            className="hidden md:flex h-9 items-center gap-1 px-3 rounded-xl"
+        <div
+          className="hidden md:flex h-9 items-center gap-1 px-3 rounded-xl"
             style={{ background: "#FFF9F0", border: "1px solid rgba(212,175,55,0.25)" }}
           >
             <button
@@ -667,7 +666,6 @@ export default function Dashboard() {
               <ChevronRight size={16} style={{ color: "#8B6914" }} />
             </button>
           </div>
-        )}
 
         {/* Live Rates Badge */}
         {liveRates && (
@@ -740,32 +738,25 @@ export default function Dashboard() {
           </button>
 
           {/* Action buttons (Desktop only) */}
-          {["pledges", "pledge_form", "existing_girvi"].includes(activeNav) && (
-            <>
+          <button
+            onClick={exportBackup}
+            title="Download Backup"
+            className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
+            style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
+          >
+            <Download size={14} />
+            <span className="hidden sm:inline">Backup</span>
+          </button>
 
-              <button
-                onClick={exportBackup}
-                title="Download Backup"
-                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
-                style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
-              >
-                <Download size={14} />
-                <span className="hidden sm:inline">Backup</span>
-              </button>
-
-              <label
-                title="Import Backup"
-                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
-                style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
-              >
-                <Upload size={14} />
-                <span className="hidden sm:inline">Import</span>
-                <input type="file" accept=".json" onChange={handleImportBackup} className="hidden" />
-              </label>
-
-
-            </>
-          )}
+          <label
+            title="Import Backup"
+            className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
+            style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
+          >
+            <Upload size={14} />
+            <span className="hidden sm:inline">Import</span>
+            <input type="file" accept=".json" onChange={handleImportBackup} className="hidden" />
+          </label>
 
           {/* User avatar / logout */}
           <div className="relative" ref={profileDropdownRef}>
@@ -904,7 +895,7 @@ export default function Dashboard() {
               }}
             >
               <div className="flex items-center justify-between px-4 py-4" style={{ borderBottom: "1px solid rgba(212,175,55,0.15)" }}>
-                <span className="font-black text-sm" style={{ color: "#2D1B0E", fontFamily: "Georgia, serif" }}>POTHA BAHI</span>
+                <span className="font-black text-sm" style={{ color: "#2D1B0E", fontFamily: "Georgia, serif" }}>GIRVI MANAGER</span>
                 <button onClick={() => setMobileSidebarOpen(false)}>
                   <X size={18} style={{ color: "#8B6914" }} />
                 </button>
