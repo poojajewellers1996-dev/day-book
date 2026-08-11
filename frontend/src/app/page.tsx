@@ -15,7 +15,6 @@ import {
   PledgeEntry, downloadDatabaseBackup, restoreDatabaseBackup, API_BASE,
 } from "../utils/api";
 import { exportBackup, importBackup } from "../utils/backup";
-import { exportToPDF } from "../utils/pdf";
 import { fetchInternetTime, getSyncedDate, getSyncedDateString, getIsInternetTimeSynced, checkSystemVsGoogleTime, TimeCheckResult } from "../utils/timeUtils";
 import LuxuryLogin from "../components/LuxuryLogin";
 import GirviLedgerView from "../components/GirviLedgerView";
