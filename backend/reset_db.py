@@ -63,19 +63,19 @@ def main():
     Base.metadata.create_all(bind=engine)
     print("\033[1;32mGirvi-only schema tables created successfully.\033[0m")
 
-    # 3. Seed default admin credentials username "admin" / password "pooja"
-    print("Seeding default admin credentials...")
+    # 3. Seed default user username "pooja" / PIN "1996"
+    print("Seeding default user credentials...")
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
     try:
-        hashed = hash_password("pooja")
-        admin_user = SystemUser(username="admin", password_hash=hashed)
-        db.add(admin_user)
+        hashed = hash_password("1996")
+        pooja_user = SystemUser(username="pooja", password_hash=hashed)
+        db.add(pooja_user)
         db.commit()
-        print("\033[1;32mAdmin user 'admin' seeded with default password 'pooja'.\033[0m")
+        print("\033[1;32mUser 'pooja' seeded with default PIN '1996'.\033[0m")
     except Exception as e:
         db.rollback()
-        print(f"\033[1;31mError seeding admin user:\033[0m {e}")
+        print(f"\033[1;31mError seeding user:\033[0m {e}")
     finally:
         db.close()
 

@@ -62,9 +62,9 @@ function MunimJi({ state }: { state: "idle" | "smile" | "coverEyes" | "shake" | 
           minHeight: 64,
         }}
       >
-        {state === "idle" && <span>🙏 Ram Ram Seth Ji! Apna Login ID aur Password daaliye, aaj ka hisaab shuru karein.</span>}
+        {state === "idle" && <span>🙏 Ram Ram Seth Ji! Apna Login ID aur Security PIN daaliye, aaj ka hisaab shuru karein.</span>}
         {state === "smile" && <span>😊 Bahut Achha! Apna Login ID daliye Seth Ji!</span>}
-        {state === "coverEyes" && <span>🙈 Main dekh nahi raha! Password daalo aur safe raho!</span>}
+        {state === "coverEyes" && <span>🙈 Main dekh nahi raha! PIN daalo aur safe raho!</span>}
         {state === "shake" && <span style={{ color: "#dc2626" }}>❌ Arre Seth Ji, lagta hai kuch galat hai!</span>}
         {state === "celebrate" && <span style={{ color: "#16a34a" }}>🎉 Swagat Hai Seth Ji! Aaj Ka Potha Tayyar Hai!</span>}
         {/* Bubble tail */}
@@ -301,7 +301,7 @@ function MunimJi({ state }: { state: "idle" | "smile" | "coverEyes" | "shake" | 
 // Main Login Component
 // ─────────────────────────────────────────────
 export default function LuxuryLogin({ onLogin }: LuxuryLoginProps) {
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState("pooja");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
@@ -534,13 +534,13 @@ export default function LuxuryLogin({ onLogin }: LuxuryLoginProps) {
                   </div>
                 </div>
 
-                {/* Password */}
+                {/* Security PIN */}
                 <div>
                   <label
                     htmlFor="login-password"
                     style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#8B6914", letterSpacing: "0.15em", textTransform: "uppercase", marginBottom: 6 }}
                   >
-                    🔒 &nbsp;Password
+                    🔑 &nbsp;Security PIN
                   </label>
                   <div className="relative">
                     <input
@@ -549,14 +549,17 @@ export default function LuxuryLogin({ onLogin }: LuxuryLoginProps) {
                       className="input-field"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
+                      placeholder="Enter 4-digit PIN"
                       required
+                      pattern="[0-9]*"
+                      inputMode="numeric"
+                      maxLength={4}
                       autoComplete="current-password"
                       onFocus={() => setMunimState("coverEyes")}
                       onBlur={() => setMunimState("idle")}
                       style={{ paddingLeft: 42, paddingRight: 56 }}
                     />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base">🔒</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base">🔑</span>
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}

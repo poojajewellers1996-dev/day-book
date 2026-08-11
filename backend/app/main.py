@@ -84,22 +84,33 @@ def decode_access_token(token: str) -> dict:
     except Exception:
         return None
 
-# Auto-seed default user "admin" with password "pooja" if not already present
+# Auto-seed default user "pooja" with PIN "1996" if not already present
 def seed_default_admin():
     from sqlalchemy.orm import sessionmaker
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     db = SessionLocal()
     try:
+        # Clean up legacy admin user
         admin_user = db.query(models.SystemUser).filter(models.SystemUser.username == "admin").first()
-        if not admin_user:
-            default_pw = "pooja"
-            hashed = hash_password(default_pw)
-            db.add(models.SystemUser(username="admin", password_hash=hashed))
+        if admin_user:
+            db.delete(admin_user)
             db.commit()
-            print("[Startup] Seeded default admin user successfully.")
+
+        pooja_user = db.query(models.SystemUser).filter(models.SystemUser.username == "pooja").first()
+        if not pooja_user:
+            default_pin = "1996"
+            hashed = hash_password(default_pin)
+            db.add(models.SystemUser(username="pooja", password_hash=hashed))
+            db.commit()
+            print("[Startup] Seeded default pooja user successfully.")
+        else:
+            if not verify_password("1996", pooja_user.password_hash):
+                pooja_user.password_hash = hash_password("1996")
+                db.commit()
+                print("[Startup] Reset default pooja user PIN to 1996.")
     except Exception as e:
         db.rollback()
-        print("[Startup] Failed to seed default admin user:", e)
+        print("[Startup] Failed to seed default user:", e)
     finally:
         db.close()
 
@@ -339,33 +350,31 @@ def open_date_settings():
 
 @app.post("/api/auth/login")
 def login(payload: dict, db: Session = Depends(get_db)):
-    username = payload.get("username", "admin") or "admin"
+    username = payload.get("username", "pooja") or "pooja"
     password = payload.get("password")
     force = payload.get("force", False)
     
     if not password:
-        raise HTTPException(status_code=400, detail="Password is required")
+        raise HTTPException(status_code=400, detail="PIN is required")
         
-    user = db.query(models.SystemUser).filter(models.SystemUser.username == username).first()
-    if not user:
-        user = db.query(models.SystemUser).filter(models.SystemUser.username == "admin").first()
+    if username.lower() != "pooja":
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or PIN"
+        )
         
+    user = db.query(models.SystemUser).filter(models.SystemUser.username == "pooja").first()
     if not user:
         raise HTTPException(
             status_code=401,
-            detail="Incorrect username or password"
+            detail="Incorrect username or PIN"
         )
         
     is_valid = verify_password(password, user.password_hash)
     if not is_valid:
-        if user.username == "admin" and password == "pooja123":
-            if verify_password("pooja", user.password_hash):
-                is_valid = True
-                
-    if not is_valid:
         raise HTTPException(
             status_code=401,
-            detail="Incorrect username or password"
+            detail="Incorrect username or PIN"
         )
         
     from datetime import datetime, timedelta
