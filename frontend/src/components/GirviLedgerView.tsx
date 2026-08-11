@@ -280,13 +280,26 @@ export default function GirviLedgerView({
           }
           return s.trim();
         };
+        const parseRobustDate = (val: string | null | undefined): string => {
+          if (!val) return new Date().toISOString().split("T")[0];
+          let s = cleanString(val);
+          const ddmmyyyyRegex = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/;
+          const match = s.match(ddmmyyyyRegex);
+          if (match) {
+            const day = match[1].padStart(2, "0");
+            const month = match[2].padStart(2, "0");
+            const year = match[3];
+            return `${year}-${month}-${day}`;
+          }
+          return s;
+        };
 
         for (let i = 1; i < lines.length; i++) {
           const cols = parseCSVLine(lines[i]);
           if (cols.length === 0 || (cols.length === 1 && !cols[0])) continue;
 
           const pledge_no = pledgeNoIdx !== -1 && cols[pledgeNoIdx] ? cleanString(cols[pledgeNoIdx]) : `IMP-${Date.now().toString().slice(-4)}-${i}`;
-          const date = dateIdx !== -1 && cols[dateIdx] ? cleanString(cols[dateIdx]) : new Date().toISOString().split("T")[0];
+          const date = dateIdx !== -1 && cols[dateIdx] ? parseRobustDate(cols[dateIdx]) : new Date().toISOString().split("T")[0];
           const customer_name = nameIdx !== -1 ? cleanString(cols[nameIdx]) : "";
           const mobile = mobileIdx !== -1 ? cleanString(cols[mobileIdx]) : "";
           const address = addressIdx !== -1 ? cleanString(cols[addressIdx]) : "";
@@ -295,7 +308,7 @@ export default function GirviLedgerView({
           const amount = amountIdx !== -1 ? parseRobustFloat(cols[amountIdx]) : 0.0;
           const status = statusIdx !== -1 ? cleanString(cols[statusIdx]).toUpperCase() : "ACTIVE";
 
-          if (!customer_name || amount <= 0 || !ornament) continue;
+          if (!customer_name || amount <= 0) continue;
 
           records.push({
             pledge_no,
@@ -303,7 +316,7 @@ export default function GirviLedgerView({
             customer_name,
             mobile,
             address,
-            ornament,
+            ornament: ornament || "Ornament",
             weight,
             amount,
             status: status === "RELEASED" ? "RELEASED" : "ACTIVE",
