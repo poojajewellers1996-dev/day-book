@@ -1561,74 +1561,7 @@ export default function GirviLedgerView({
                       className="w-full px-3 py-2 rounded-lg border border-amber-200 text-xs outline-none focus:border-amber-500" />
                   </div>
 
-                  {/* Payment Method Selector */}
-                  <div>
-                    <label className="block text-[10px] font-bold text-amber-900 mb-1">Payment Given Via</label>
-                    <select
-                      value={editMethod}
-                      onChange={e => setEditMethod(e.target.value as any)}
-                      className="w-full px-2.5 py-2 rounded-lg border border-amber-300 bg-amber-50/40 text-xs font-black text-amber-950 outline-none focus:border-amber-500 cursor-pointer"
-                    >
-                      <option value="CASH">💵 Cash</option>
-                      <option value="UPI">📱 UPI / PhonePe</option>
-                      <option value="SPLIT">🥞 Split (Cash + UPI)</option>
-                      <option value="OTHER">🔄 Other</option>
-                    </select>
-                  </div>
 
-                  {/* UPI Account Selector */}
-                  {editMethod === "UPI" && (
-                    <div className="col-span-2 sm:col-span-2">
-                      <label className="block text-[10px] font-bold text-blue-900 mb-1">Debited UPI Bank Account</label>
-                      <select
-                        value={editUpiAccount}
-                        onChange={e => setEditUpiAccount(e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-blue-300 bg-blue-50/60 text-xs font-black text-blue-950 outline-none focus:border-blue-500 cursor-pointer"
-                      >
-                        {UPI_ACCOUNT_OPTIONS.map(opt => (
-                          <option key={opt.key} value={opt.key}>{opt.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* Split Payment Controls */}
-                  {editMethod === "SPLIT" && (
-                    <div className="col-span-2 sm:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-3 bg-amber-50/60 border border-dashed border-amber-300 p-3 rounded-xl">
-                      <div>
-                        <label className="block text-[10px] font-bold text-amber-900 mb-1">Cash Given (₹)</label>
-                        <input
-                          type="number"
-                          value={editSplitCash}
-                          onChange={e => setEditSplitCash(e.target.value)}
-                          placeholder="e.g. 2000"
-                          className="w-full px-3 py-1.5 rounded-lg border border-amber-200 text-xs font-mono font-bold outline-none focus:border-amber-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-amber-900 mb-1">UPI Given (₹)</label>
-                        <input
-                          type="number"
-                          value={editSplitUpi}
-                          onChange={e => setEditSplitUpi(e.target.value)}
-                          placeholder="e.g. 3000"
-                          className="w-full px-3 py-1.5 rounded-lg border border-amber-200 text-xs font-mono font-bold outline-none focus:border-amber-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-blue-900 mb-1">Debited UPI Bank Account</label>
-                        <select
-                          value={editUpiAccount}
-                          onChange={e => setEditUpiAccount(e.target.value)}
-                          className="w-full px-2 py-1.5 rounded-lg border border-blue-300 bg-blue-50/60 text-xs font-black text-blue-950 outline-none focus:border-blue-500 cursor-pointer"
-                        >
-                          {UPI_ACCOUNT_OPTIONS.map(opt => (
-                            <option key={opt.key} value={opt.key}>{opt.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 

@@ -1035,89 +1035,8 @@ export default function PledgeFormView({
                 className="w-full px-3.5 py-2 rounded-lg border border-amber-250 outline-none text-xs font-medium"
               />
             </div>
-            <div>
-              <label className="block text-[10px] font-semibold text-amber-850 mb-1">Payment Method</label>
-              <select
-                value={form.method}
-                onChange={(e) => setForm((prev) => ({ ...prev, method: e.target.value }))}
-                onKeyDown={handleKeyDown}
-                className="w-full px-2.5 py-2 rounded-lg border border-amber-250 outline-none text-xs font-black text-amber-950"
-              >
-                <option value="CASH">💵 Cash</option>
-                <option value="UPI">📱 UPI / PhonePe</option>
-                <option value="SPLIT">🥞 Split (Cash + UPI)</option>
-                <option value="OTHER">🔄 Other</option>
-              </select>
-            </div>
           </div>
 
-          {/* Render UPI account selector if UPI method is selected */}
-          {form.method === "UPI" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-blue-50/40 border border-dashed border-blue-200 p-4 rounded-xl mt-3 animate-fadeIn">
-              <div className="sm:col-span-2">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-blue-900 mb-1">Debited UPI Bank Account</label>
-                <select
-                  value={upiAccount}
-                  onChange={(e) => setUpiAccount(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-blue-300 outline-none text-xs font-black text-blue-950 focus:border-blue-500 bg-white"
-                >
-                  <option value="hdfc_192">🏦 HDFC Bank (..192)</option>
-                  <option value="hdfc_od_7442">🏦 HDFC OD (..7442)</option>
-                  <option value="pooja_068">🏦 Pooja (..068)</option>
-                  <option value="shankarlal_832">🏦 Shankarlal (..832)</option>
-                  <option value="vikash">👤 Vikash Account</option>
-                  <option value="vikram">👤 Vikram Account</option>
-                  <option value="deepak">👤 Deepak Account</option>
-                  <option value="kavitha">👤 Kavitha Account</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Render split payment input fields if SPLIT method is selected */}
-          {form.method === "SPLIT" && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-amber-50/30 border border-dashed border-amber-250 p-4 rounded-xl mt-3 animate-fadeIn">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-850 mb-1">Cash Amount Given (₹)</label>
-                <input
-                  type="number"
-                  required
-                  placeholder="e.g. 5000"
-                  value={splitCash}
-                  onChange={(e) => setSplitCash(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-amber-250 outline-none text-xs font-black font-mono text-center focus:border-amber-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-850 mb-1">UPI Amount Given (₹)</label>
-                <input
-                  type="number"
-                  required
-                  placeholder="e.g. 5000"
-                  value={splitUpi}
-                  onChange={(e) => setSplitUpi(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-lg border border-amber-250 outline-none text-xs font-black font-mono text-center focus:border-amber-500"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-850 mb-1">UPI Bank Account</label>
-                <select
-                  value={splitUpiAccount}
-                  onChange={(e) => setSplitUpiAccount(e.target.value)}
-                  className="w-full px-2.5 py-2 rounded-lg border border-amber-250 outline-none text-xs font-black text-amber-950 focus:border-amber-500"
-                >
-                  <option value="hdfc_192">HDFC Bank (..192)</option>
-                  <option value="hdfc_od_7442">HDFC OD (..7442)</option>
-                  <option value="pooja_068">Pooja (..068)</option>
-                  <option value="shankarlal_832">Shankarlal (..832)</option>
-                  <option value="vikash">Vikash Account</option>
-                  <option value="vikram">Vikram Account</option>
-                  <option value="deepak">Deepak Account</option>
-                  <option value="kavitha">Kavitha Account</option>
-                </select>
-              </div>
-            </div>
-          )}
 
           {/* Upfront Interest (Banda) Row */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-amber-50/20 border border-dashed border-amber-200/50 rounded-xl p-3.5 mt-2">
