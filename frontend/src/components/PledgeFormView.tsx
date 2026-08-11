@@ -857,30 +857,7 @@ export default function PledgeFormView({
         <div className="border border-amber-100 rounded-2xl p-5 bg-amber-50/10 space-y-4">
           <div className="flex justify-between items-center border-b border-amber-150 pb-1.5 mb-2">
             <h4 className="text-xs font-bold text-amber-950 font-serif uppercase tracking-wider">Article Details</h4>
-            <div className="flex gap-1 bg-amber-100/50 p-0.5 rounded-lg border border-amber-900/10">
-              {[1, 2, 3].map((num) => {
-                const hasData = num === 1
-                  ? form.ornament || form.gross_weight
-                  : (form as any)[`ornament_${num}`] || (form as any)[`gross_weight_${num}`];
-                const isActive = activeArticleTab === num;
-                return (
-                  <button
-                    key={`article-tab-${num}`}
-                    type="button"
-                    onClick={() => setActiveArticleTab(num)}
-                    className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all relative ${isActive
-                        ? "bg-amber-950 text-white shadow-sm"
-                        : "text-amber-800 hover:bg-amber-100"
-                      }`}
-                  >
-                    Article {num}
-                    {hasData && (
-                      <span className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full ${isActive ? "bg-amber-300" : "bg-amber-600"}`} />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="sm:col-span-2">
