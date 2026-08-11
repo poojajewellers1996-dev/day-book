@@ -491,6 +491,39 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
             "module": l.module
         })
         
+    # Calculate monthly trends (last 6 months)
+    from datetime import date
+    from collections import defaultdict
+
+    monthly_data = defaultdict(lambda: {"principal": 0.0, "count": 0})
+    all_pledges = db.query(models.PledgeEntry).all()
+    for p in all_pledges:
+        if p.date:
+            try:
+                ym = p.date[:7] # YYYY-MM
+                monthly_data[ym]["principal"] += p.amount
+                monthly_data[ym]["count"] += 1
+            except Exception:
+                pass
+
+    today = date.today()
+    monthly_trends = []
+    for i in range(5, -1, -1):
+        y = today.year
+        m = today.month - i
+        while m <= 0:
+            m += 12
+            y -= 1
+        ym = f"{y:04d}-{m:02d}"
+        temp_date = date(y, m, 1)
+        label = temp_date.strftime("%b %y")
+        monthly_trends.append({
+            "month_key": ym,
+            "label": label,
+            "principal": monthly_data[ym]["principal"],
+            "count": monthly_data[ym]["count"]
+        })
+
     return {
         "outstanding_girvi": outstanding_girvi,
         "active_girvi_count": active_girvi_count,
@@ -503,7 +536,8 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "active_silver_wt_safe": active_silver_wt_safe,
         "active_silver_wt_bank": active_silver_wt_bank,
         "upcoming_due_pledges": upcoming_due_pledges,
-        "recent_logs": recent_logs
+        "recent_logs": recent_logs,
+        "monthly_trends": monthly_trends
     }
 
 

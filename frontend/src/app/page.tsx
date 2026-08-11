@@ -1674,6 +1674,12 @@ interface DashboardStats {
     details: string;
     module: string;
   }[];
+  monthly_trends?: {
+    month_key: string;
+    label: string;
+    principal: number;
+    count: number;
+  }[];
 }
 
 function DashboardView() {
@@ -1802,6 +1808,255 @@ function DashboardView() {
           </div>
         </div>
       </div>
+
+      {/* Visual Analytics Row */}
+      {stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Trend Chart (8 cols) */}
+          <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-8 flex flex-col justify-between">
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <h3 className="font-bold text-sm font-serif" style={{ color: "#2D1B0E" }}>
+                  Monthly Pledge Trends
+                </h3>
+                <span className="text-[9px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full uppercase tracking-wider">Last 6 Months</span>
+              </div>
+              <p className="text-[10px] text-amber-800/60 font-medium mb-4">Volume of principal sum and count of loans registered.</p>
+            </div>
+
+            <div className="relative w-full h-[160px]">
+              {(() => {
+                const trends = stats.monthly_trends || [];
+                if (trends.length === 0) {
+                  return (
+                    <div className="absolute inset-0 flex items-center justify-center text-xs text-amber-800/50 font-semibold italic">
+                      No trend data available
+                    </div>
+                  );
+                }
+                const maxVal = Math.max(...trends.map(t => t.principal || 0), 100000);
+                const chartW = 600;
+                const chartH = 150;
+                const marginL = 65;
+                const marginR = 20;
+                const marginT = 15;
+                const marginB = 25;
+                const plotW = chartW - marginL - marginR;
+                const plotH = chartH - marginT - marginB;
+
+                const points = trends.map((t, idx) => {
+                  const x = marginL + (idx / (trends.length - 1 || 1)) * plotW;
+                  const y = marginT + plotH - ((t.principal || 0) / maxVal) * plotH;
+                  return { x, y, label: t.label, val: t.principal, count: t.count };
+                });
+
+                let pathD = "";
+                let areaD = "";
+                if (points.length > 0) {
+                  pathD = `M ${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L ${p.x} ${p.y}`).join(" ");
+                  areaD = `${pathD} L ${points[points.length - 1].x} ${marginT + plotH} L ${points[0].x} ${marginT + plotH} Z`;
+                }
+
+                // Y-Axis tick points (3 ticks: 0, max/2, max)
+                const yTicks = [0, maxVal / 2, maxVal];
+
+                return (
+                  <svg className="w-full h-full" viewBox={`0 0 ${chartW} ${chartH}`} preserveAspectRatio="none">
+                    <defs>
+                      <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#D4AF37" stopOpacity="0.3" />
+                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.0" />
+                      </linearGradient>
+                    </defs>
+
+                    {/* Horizontal Gridlines */}
+                    {yTicks.map((tick, idx) => {
+                      const y = marginT + plotH - (tick / maxVal) * plotH;
+                      return (
+                        <g key={idx}>
+                          <line
+                            x1={marginL}
+                            y1={y}
+                            x2={chartW - marginR}
+                            y2={y}
+                            stroke="#f5ebe0"
+                            strokeWidth="1"
+                            strokeDasharray="4,4"
+                          />
+                          <text
+                            x={marginL - 10}
+                            y={y + 4}
+                            textAnchor="end"
+                            className="font-mono text-[9px] font-bold fill-amber-900/60"
+                          >
+                            ₹{(tick / 1000).toFixed(0)}k
+                          </text>
+                        </g>
+                      );
+                    })}
+
+                    {/* Area path */}
+                    {areaD && <path d={areaD} fill="url(#chartGrad)" />}
+
+                    {/* Line path */}
+                    {pathD && (
+                      <path
+                        d={pathD}
+                        fill="none"
+                        stroke="#c8960c"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )}
+
+                    {/* Interactive points & labels */}
+                    {points.map((p, idx) => (
+                      <g key={idx} className="group cursor-pointer">
+                        <circle
+                          cx={p.x}
+                          cy={p.y}
+                          r="4"
+                          fill="white"
+                          stroke="#c8960c"
+                          strokeWidth="2.5"
+                        />
+                        {/* Hover circle indicator */}
+                        <circle
+                          cx={p.x}
+                          cy={p.y}
+                          r="8"
+                          fill="#c8960c"
+                          fillOpacity="0"
+                          className="hover:fill-opacity-20 transition-all"
+                        />
+                        {/* X-Axis Labels */}
+                        <text
+                          x={p.x}
+                          y={chartH - 5}
+                          textAnchor="middle"
+                          className="text-[9px] font-bold fill-amber-900/70"
+                        >
+                          {p.label}
+                        </text>
+                        {/* Tooltip on point hover */}
+                        <g className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                          <rect
+                            x={p.x - 45}
+                            y={p.y - 35}
+                            width="90"
+                            height="24"
+                            rx="6"
+                            fill="#4A2800"
+                            style={{ filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.15))" }}
+                          />
+                          <text
+                            x={p.x}
+                            y={p.y - 25}
+                            textAnchor="middle"
+                            fill="white"
+                            className="font-mono text-[8px] font-black"
+                          >
+                            ₹{p.val.toLocaleString("en-IN")} ({p.count})
+                          </text>
+                        </g>
+                      </g>
+                    ))}
+                  </svg>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Safe vs Bank Valuation Doughnut Chart (4 cols) */}
+          <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-4 flex flex-col justify-between">
+            <div>
+              <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
+                Loan Book Distribution
+              </h3>
+              <p className="text-[10px] text-amber-800/60 font-medium mb-4">Book value allocation of Safe vs Bank.</p>
+            </div>
+
+            <div className="flex items-center justify-center py-2">
+              {(() => {
+                const total = stats.outstanding_girvi || 1;
+                const bankVal = stats.total_repledged_amount || 0;
+                const safeVal = Math.max(total - bankVal, 0);
+                const safePct = (safeVal / total) * 100;
+                const bankPct = (bankVal / total) * 100;
+
+                const radius = 36;
+                const circ = 2 * Math.PI * radius;
+                const safeStrokeOffset = circ - (safePct / 100) * circ;
+                const bankStrokeOffset = circ - (bankPct / 100) * circ;
+
+                return (
+                  <div className="relative w-[130px] h-[130px] flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r={radius}
+                        fill="transparent"
+                        stroke="#f5ebe0"
+                        strokeWidth="10"
+                      />
+                      {bankVal > 0 && (
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r={radius}
+                          fill="transparent"
+                          stroke="#6366f1"
+                          strokeWidth="10"
+                          strokeDasharray={circ}
+                          strokeDashoffset={bankStrokeOffset}
+                          strokeLinecap="round"
+                          className="transition-all duration-700"
+                        />
+                      )}
+                      {safeVal > 0 && (
+                        <circle
+                          cx="50"
+                          cy="50"
+                          r={radius}
+                          fill="transparent"
+                          stroke="#D4AF37"
+                          strokeWidth="10"
+                          strokeDashoffset={safeStrokeOffset}
+                          strokeDasharray={`${(safePct / 100) * circ} ${circ}`}
+                          className="transition-all duration-700"
+                        />
+                      )}
+                    </svg>
+                    <div className="absolute flex flex-col items-center text-center">
+                      <span className="text-[10px] font-bold text-amber-800/60 uppercase tracking-widest leading-none">Safe</span>
+                      <span className="text-lg font-black text-amber-950 leading-tight mt-1">{safePct.toFixed(0)}%</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="border-t border-amber-50 pt-4 mt-2 space-y-2 text-xs font-bold font-sans">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" />
+                  <span className="text-amber-900/80">In-Store Safe</span>
+                </div>
+                <span className="font-mono text-amber-950">₹{Math.max(stats.outstanding_girvi - stats.total_repledged_amount, 0).toLocaleString("en-IN")}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                  <span className="text-indigo-900/80">Bank Re-Pledge</span>
+                </div>
+                <span className="font-mono text-indigo-950">₹{stats.total_repledged_amount.toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Custody Distribution Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -114,6 +114,8 @@ export default function GirviLedgerView({
   const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST" | "AMOUNT_HIGH_TO_LOW" | "AMOUNT_LOW_TO_HIGH" | "NAME_AZ" | "NAME_ZA" | "WEIGHT_HIGH_TO_LOW">("NEWEST");
   const [fromDateFilter, setFromDateFilter] = useState("");
   const [toDateFilter, setToDateFilter] = useState("");
+  const [minWeightFilter, setMinWeightFilter] = useState("");
+  const [maxWeightFilter, setMaxWeightFilter] = useState("");
 
   // Detailed Modal States
   const [showReleaseModal, setShowReleaseModal] = useState(false);
@@ -721,7 +723,16 @@ export default function GirviLedgerView({
         matchesDate = matchesDate && itemDateStr <= toDateFilter;
       }
 
-      return matchesSearch && matchesStatus && matchesMetal && matchesDate;
+      const netWt = item.net_weight || item.weight || 0.0;
+      let matchesWeight = true;
+      if (minWeightFilter) {
+        matchesWeight = matchesWeight && netWt >= parseFloat(minWeightFilter);
+      }
+      if (maxWeightFilter) {
+        matchesWeight = matchesWeight && netWt <= parseFloat(maxWeightFilter);
+      }
+
+      return matchesSearch && matchesStatus && matchesMetal && matchesDate && matchesWeight;
     })
     .sort((a, b) => {
       if (sortBy === "NEWEST") {
@@ -784,7 +795,16 @@ export default function GirviLedgerView({
     }
   });
 
-  const hasActiveFilters = Boolean(searchTerm || statusFilter !== "ALL" || metalFilter !== "ALL" || fromDateFilter || toDateFilter || sortBy !== "NEWEST");
+  const hasActiveFilters = Boolean(
+    searchTerm ||
+    statusFilter !== "ALL" ||
+    metalFilter !== "ALL" ||
+    fromDateFilter ||
+    toDateFilter ||
+    sortBy !== "NEWEST" ||
+    minWeightFilter ||
+    maxWeightFilter
+  );
 
   const clearAllFilters = () => {
     setSearchTerm("");
@@ -793,6 +813,8 @@ export default function GirviLedgerView({
     setSortBy("NEWEST");
     setFromDateFilter("");
     setToDateFilter("");
+    setMinWeightFilter("");
+    setMaxWeightFilter("");
   };
 
   return (
@@ -976,6 +998,33 @@ export default function GirviLedgerView({
               value={toDateFilter}
               onChange={(e) => setToDateFilter(e.target.value)}
               className="px-2.5 py-1.5 rounded-xl border border-amber-200 text-xs font-bold text-amber-950 outline-none focus:border-amber-500 font-mono"
+              style={{ background: "#FFFBF5" }}
+            />
+          </div>
+
+          {/* Weight Range Filter */}
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-amber-900/70 font-serif">Min Wt (g):</span>
+            <input
+              type="number"
+              step="any"
+              placeholder="e.g. 5"
+              value={minWeightFilter}
+              onChange={(e) => setMinWeightFilter(e.target.value)}
+              className="w-16 px-2 py-1.5 rounded-xl border border-amber-200 text-xs font-bold text-amber-950 outline-none focus:border-amber-500 font-mono"
+              style={{ background: "#FFFBF5" }}
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-amber-900/70 font-serif">Max Wt (g):</span>
+            <input
+              type="number"
+              step="any"
+              placeholder="e.g. 50"
+              value={maxWeightFilter}
+              onChange={(e) => setMaxWeightFilter(e.target.value)}
+              className="w-16 px-2 py-1.5 rounded-xl border border-amber-200 text-xs font-bold text-amber-950 outline-none focus:border-amber-500 font-mono"
               style={{ background: "#FFFBF5" }}
             />
           </div>
