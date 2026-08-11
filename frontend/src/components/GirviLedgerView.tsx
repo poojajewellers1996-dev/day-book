@@ -1682,70 +1682,6 @@ export default function GirviLedgerView({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-850 mb-1">Release Payment Method</label>
-                  <select
-                    value={releaseForm.method}
-                    onChange={(e) => setReleaseForm({ ...releaseForm, method: e.target.value })}
-                    className="w-full px-2.5 py-2.5 rounded-xl border border-amber-200 outline-none text-xs font-bold text-amber-950 focus:border-emerald-500"
-                    style={{ background: "#F9FAF6" }}
-                  >
-                    <option value="CASH">💵 Cash</option>
-                    <option value="UPI">📱 UPI / PhonePe</option>
-                    <option value="OTHER">🔄 Other</option>
-                    <option value="SPLIT">🔀 Split Payment</option>
-                  </select>
-                </div>
-
-                {releaseForm.method === "SPLIT" && (
-                  <div className="space-y-2 pt-1">
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase tracking-wider text-amber-850 mb-1">Cash (₹)</label>
-                        <input
-                          type="number"
-                          value={releaseForm.splitCash}
-                          onChange={(e) => setReleaseForm({ ...releaseForm, splitCash: e.target.value })}
-                          placeholder="e.g. 5000"
-                          className="w-full px-2.5 py-2 rounded-xl border border-amber-200 outline-none text-xs font-mono font-bold text-amber-955"
-                          style={{ background: "#F9FAF6" }}
-                          required
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase tracking-wider text-amber-850 mb-1">UPI (₹)</label>
-                        <input
-                          type="number"
-                          value={releaseForm.splitUpi}
-                          onChange={(e) => setReleaseForm({ ...releaseForm, splitUpi: e.target.value })}
-                          placeholder="e.g. 2000"
-                          className="w-full px-2.5 py-2 rounded-xl border border-amber-200 outline-none text-xs font-mono font-bold text-amber-955"
-                          style={{ background: "#F9FAF6" }}
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-bold uppercase tracking-wider text-amber-850 mb-1">UPI Account</label>
-                      <select
-                        value={releaseForm.splitUpiAccount}
-                        onChange={(e) => setReleaseForm({ ...releaseForm, splitUpiAccount: e.target.value })}
-                        className="w-full px-2.5 py-2 rounded-xl border border-amber-200 outline-none text-xs font-bold text-amber-955"
-                        style={{ background: "#F9FAF6" }}
-                      >
-                        <option value="hdfc_192">HDFC Bank (..192)</option>
-                        <option value="hdfc_od_7442">HDFC OD (..7442)</option>
-                        <option value="pooja_068">Pooja (..068)</option>
-                        <option value="shankarlal_832">Shankarlal (..832)</option>
-                        <option value="vikash">Vikash Account</option>
-                        <option value="vikram">Vikram Account</option>
-                        <option value="deepak">Deepak Account</option>
-                        <option value="kavitha">Kavitha Account</option>
-                      </select>
-                    </div>
-                  </div>
-                )}
-
                 <div className="flex gap-2 pt-2">
                   <button
                     type="button"
@@ -1847,19 +1783,7 @@ export default function GirviLedgerView({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-850 mb-1">Payment Method</label>
-                  <select
-                    value={bandaForm.method}
-                    onChange={(e) => setBandaForm({ ...bandaForm, method: e.target.value })}
-                    className="w-full px-2.5 py-2.5 rounded-xl border border-amber-200 outline-none text-xs font-bold text-amber-950 focus:border-amber-500"
-                    style={{ background: "#F9FAF6" }}
-                  >
-                    <option value="CASH">💵 Cash</option>
-                    <option value="UPI">📱 UPI / PhonePe</option>
-                    <option value="OTHER">🔄 Other</option>
-                  </select>
-                </div>
+
 
                 <div className="flex gap-2 pt-2">
                   <button
@@ -2212,41 +2136,6 @@ export default function GirviLedgerView({
                           style={{ background: "#FFFBF5" }}
                         />
                       </div>
-
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase tracking-wider text-amber-850 mb-1">Payment Method</label>
-                        <select
-                          value={paymentForm.payment_method}
-                          onChange={(e: any) => setPaymentForm({ ...paymentForm, payment_method: e.target.value })}
-                          className="w-full px-2.5 py-2 rounded-xl border border-amber-200 outline-none text-xs font-bold text-amber-955 focus:border-blue-500"
-                          style={{ background: "#FFFBF5" }}
-                        >
-                          <option value="CASH">💵 Cash</option>
-                          <option value="UPI">📱 UPI / PhonePe</option>
-                          <option value="OTHER">🔄 Other</option>
-                        </select>
-                      </div>
-
-                      {paymentForm.payment_method === "UPI" && (
-                        <div>
-                          <label className="block text-[9px] font-bold uppercase tracking-wider text-amber-850 mb-1">Select UPI Account</label>
-                          <select
-                            value={paymentUpiAccount}
-                            onChange={(e) => setPaymentUpiAccount(e.target.value)}
-                            className="w-full px-2.5 py-2 rounded-xl border border-amber-200 outline-none text-xs font-bold text-amber-955 focus:border-blue-500"
-                            style={{ background: "#FFFBF5" }}
-                          >
-                            <option value="hdfc_192">HDFC Bank (..192)</option>
-                            <option value="hdfc_od_7442">HDFC OD (..7442)</option>
-                            <option value="pooja_068">Pooja (..068)</option>
-                            <option value="shankarlal_832">Shankarlal (..832)</option>
-                            <option value="vikash">Vikash Account</option>
-                            <option value="vikram">Vikram Account</option>
-                            <option value="deepak">Deepak Account</option>
-                            <option value="kavitha">Kavitha Account</option>
-                          </select>
-                        </div>
-                      )}
 
                       <button
                         type="submit"

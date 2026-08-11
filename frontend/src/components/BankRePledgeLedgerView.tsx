@@ -1612,22 +1612,7 @@ export default function BankRePledgeLedgerView({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-purple-900 mb-1">
-                  Payment Method / Account Used *
-                </label>
-                <select
-                  value={interestPayMode}
-                  onChange={(e) => setInterestPayMode(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-purple-200 text-xs font-black text-purple-950 outline-none focus:border-purple-500 bg-purple-50/30"
-                >
-                  <option value="CASH">💵 Cash</option>
-                  <option value="HDFC">🏦 HDFC Bank (..192)</option>
-                  <option value="HDFC_OD">🏦 HDFC OD (..7442)</option>
-                  <option value="UPI">📱 PhonePe / UPI</option>
-                  <option value="OTHER">💳 Other Bank / Online</option>
-                </select>
-              </div>
+
 
               <div>
                 <label className="block text-xs font-bold text-purple-900 mb-1">
@@ -1657,9 +1642,6 @@ export default function BankRePledgeLedgerView({
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-[11px] text-purple-900 font-medium">
-                ⚡ <b>Auto-Day Book Entry:</b> Submitting this will automatically post a <b>Debit Entry (Javak)</b> of ₹{parseFloat(interestPayAmount || "0").toLocaleString("en-IN")} ({interestPayMode === "HDFC" ? "HDFC Bank" : interestPayMode === "HDFC_OD" ? "HDFC OD" : interestPayMode === "UPI" ? "PhonePe/UPI" : "Cash"}) in the Day Book for {formatDateDMY(interestPayDate)}.
-              </div>
 
               <div className="pt-2 flex gap-3">
                 <button
