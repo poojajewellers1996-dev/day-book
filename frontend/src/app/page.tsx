@@ -63,12 +63,12 @@ const getPledgeDateFromDueDate = (dueDateStr: string | undefined): string => {
 
 // ─── Sidebar nav items ──────────────────────────────────────────────────────
 const NAV = [
-  { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", active: true },
-  { id: "pledge_form", icon: Plus, label: "Girvi Form", active: false },
+  { id: "pledge_form", icon: Plus, label: "Girvi Form", active: true },
   { id: "existing_girvi", icon: Plus, label: "Existing Girvi", active: false },
   { id: "pledges", icon: Coins, label: "Girvi Ledger", active: false },
   { id: "bank_repledge", icon: Landmark, label: "Bank Re-Pledge", active: false },
   { id: "backup_audit", icon: ShieldCheck, label: "Data & Backups", active: false },
+  { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", active: false },
   { id: "system_logs", icon: History, label: "System Logs", active: false },
   { id: "settings", icon: Settings, label: "Settings", active: false },
 ];
@@ -186,10 +186,32 @@ export default function Dashboard() {
   const pathname = usePathname();
   const router = useRouter();
 
+  const [unlockedTabs, setUnlockedTabs] = useState<string[]>([]);
+  const [lockPassword, setLockPassword] = useState("");
+  const [lockError, setLockError] = useState("");
+
+  const handleUnlockTab = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (lockPassword === "pooja123") {
+      setUnlockedTabs([...unlockedTabs, activeNav]);
+      setLockPassword("");
+      setLockError("");
+    } else {
+      setLockError("Incorrect password. Please try again.");
+    }
+  };
+
+  const isTabLocked = (tabId: string) => {
+    if (tabId === "dashboard" || tabId === "system_logs") {
+      return !unlockedTabs.includes(tabId);
+    }
+    return false;
+  };
+
   const getNavFromPath = (path: string) => {
     const clean = path.replace(/^\//, "");
-    if (!clean) return "dashboard";
-    return NAV.some(item => item.id === clean) ? clean : "dashboard";
+    if (!clean) return "pledge_form";
+    return NAV.some(item => item.id === clean) ? clean : "pledge_form";
   };
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -206,7 +228,7 @@ export default function Dashboard() {
         return clean;
       }
     }
-    return "dashboard";
+    return "pledge_form";
   });
   const [currentTime, setCurrentTime] = useState(() => getSyncedDate());
 
@@ -501,7 +523,7 @@ export default function Dashboard() {
             localStorage.setItem("pooja_daybook_token", forceData.access_token);
             localStorage.setItem("pooja_daybook_auth", "true");
             setIsAuthenticated(true);
-            router.push("/daybook");
+            router.push("/pledge_form");
             return true;
           }
         }
@@ -513,7 +535,7 @@ export default function Dashboard() {
       localStorage.setItem("pooja_daybook_token", token);
       localStorage.setItem("pooja_daybook_auth", "true");
       setIsAuthenticated(true);
-      router.push("/daybook");
+      router.push("/pledge_form");
       return true;
     } catch (err) {
       console.error("Login request error:", err);
@@ -951,57 +973,99 @@ export default function Dashboard() {
               </div>
             )}
 
-            {activeNav === "pledge_form" && (
-              <PledgeFormView
-                currentDate={currentDate}
-                onSuccess={(pledge) => {
-                  setSelectedPrintPledge(pledge);
-                  setActiveNav("pledges");
-                }}
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "existing_girvi" && (
-              <PledgeFormView
-                currentDate={currentDate}
-                isExisting={true}
-                onSuccess={(pledge) => {
-                  setSelectedPrintPledge(pledge);
-                  setActiveNav("pledges");
-                }}
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "backup_audit" && (
-              <BackupAuditView
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "system_logs" && (
-              <SystemLogsView
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "pledges" && (
-              <GirviLedgerView
-                currentDate={currentDate}
-                onSelectPrintPledge={(p) => setSelectedPrintPledge(p)}
-                showNotification={showNotification}
-                onSwitchToForm={() => setActiveNav("pledge_form")}
-              />
-            )}
-            {activeNav === "bank_repledge" && (
-              <BankRePledgeLedgerView
-                currentDate={currentDate}
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "dashboard" && <DashboardView />}
-            {activeNav === "settings" && (
-              <SettingsView
-                currentDate={currentDate}
-                showNotification={showNotification}
-              />
+            {isTabLocked(activeNav) ? (
+              <div className="flex flex-col items-center justify-center min-h-[50vh] max-w-sm mx-auto p-8 bg-white rounded-3xl border border-amber-100 shadow-md text-center my-12 animate-fade-in">
+                <div className="w-16 h-16 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-2xl mb-4 select-none">
+                  🔒
+                </div>
+                <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
+                  Locked Section
+                </h3>
+                <p className="text-[11px] text-amber-800/60 font-semibold mb-6 leading-relaxed">
+                  The {activeNav === "dashboard" ? "Dashboard" : "System Logs"} contains sensitive information. Please enter the security password to unlock.
+                </p>
+                
+                <form onSubmit={handleUnlockTab} className="w-full space-y-4">
+                  <div>
+                    <input
+                      type="password"
+                      value={lockPassword}
+                      onChange={(e) => { setLockPassword(e.target.value); setLockError(""); }}
+                      placeholder="Enter password"
+                      className="w-full text-xs p-3 border border-amber-200 rounded-xl outline-none focus:border-amber-500 font-sans"
+                      style={{ background: "#FFFBF5" }}
+                      required
+                      autoFocus
+                    />
+                    {lockError && (
+                      <p className="text-[10px] text-red-650 font-bold text-left mt-1.5">⚠️ {lockError}</p>
+                    )}
+                  </div>
+                  
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black rounded-xl shadow-md transition-all cursor-pointer"
+                    style={{ background: "linear-gradient(135deg,#c8960c,#d4af37)" }}
+                  >
+                    Unlock Section
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <>
+                {activeNav === "pledge_form" && (
+                  <PledgeFormView
+                    currentDate={currentDate}
+                    onSuccess={(pledge) => {
+                      setSelectedPrintPledge(pledge);
+                      setActiveNav("pledges");
+                    }}
+                    showNotification={showNotification}
+                  />
+                )}
+                {activeNav === "existing_girvi" && (
+                  <PledgeFormView
+                    currentDate={currentDate}
+                    isExisting={true}
+                    onSuccess={(pledge) => {
+                      setSelectedPrintPledge(pledge);
+                      setActiveNav("pledges");
+                    }}
+                    showNotification={showNotification}
+                  />
+                )}
+                {activeNav === "backup_audit" && (
+                  <BackupAuditView
+                    showNotification={showNotification}
+                  />
+                )}
+                {activeNav === "system_logs" && (
+                  <SystemLogsView
+                    showNotification={showNotification}
+                  />
+                )}
+                {activeNav === "pledges" && (
+                  <GirviLedgerView
+                    currentDate={currentDate}
+                    onSelectPrintPledge={(p) => setSelectedPrintPledge(p)}
+                    showNotification={showNotification}
+                    onSwitchToForm={() => setActiveNav("pledge_form")}
+                  />
+                )}
+                {activeNav === "bank_repledge" && (
+                  <BankRePledgeLedgerView
+                    currentDate={currentDate}
+                    showNotification={showNotification}
+                  />
+                )}
+                {activeNav === "dashboard" && <DashboardView />}
+                {activeNav === "settings" && (
+                  <SettingsView
+                    currentDate={currentDate}
+                    showNotification={showNotification}
+                  />
+                )}
+              </>
             )}
           </div>
         </main>
