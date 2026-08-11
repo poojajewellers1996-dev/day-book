@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Plus, RefreshCw, Save, Camera, X } from "lucide-react";
-import { PledgeEntry, fetchAllPledges, addSubEntry, fetchDayBook } from "../utils/api";
+import { PledgeEntry, fetchAllPledges, createPledgeEntry } from "../utils/api";
 import { compressImageToWebP, compressCanvasToWebP } from "../utils/imageUtils";
 
 const numberToWords = (num: number): string => {
@@ -58,14 +58,13 @@ const compressImage = (file: File): Promise<string> => {
 
 interface PledgeFormViewProps {
   currentDate: string;
-  daybookId: number;
   onSuccess: (pledge: PledgeEntry) => void;
   showNotification: (msg: string, type: "success" | "info" | "error") => void;
   isExisting?: boolean;
 }
 
 export default function PledgeFormView({
-  currentDate, daybookId, onSuccess, showNotification, isExisting = false,
+  currentDate, onSuccess, showNotification, isExisting = false,
 }: PledgeFormViewProps) {
   const [pledges, setPledges] = useState<PledgeEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -527,11 +526,6 @@ export default function PledgeFormView({
 
     setLoading(true);
     try {
-      // 1. Fetch or create DayBook for the Pledge date
-      const dbRes = await fetchDayBook(form.date);
-      const db = dbRes.data;
-
-      // 2. Post Pledge item
       const isUpi = form.method === "UPI";
       const isOther = form.method === "OTHER";
       const prefix = isSplit ? `[SPLIT:C${cashAmt}:U${upiAmt}:A${splitUpiAccount}] ` : isUpi ? `[UPI:${upiAccount}] ` : isOther ? "[OTHER] " : "";
@@ -544,6 +538,7 @@ export default function PledgeFormView({
         weight: weightSum,
         amount: parseFloat(form.amount),
         interest_percentage: parseFloat(form.interest_percentage) || 2,
+        date: form.date,
         pledge_no: form.pledge_no,
         pawner_relation: form.pawner_relation,
         pawner_relation_name: form.pawner_relation_name,
@@ -581,11 +576,9 @@ export default function PledgeFormView({
         item_photo: form.item_photo || "",
         is_existing: isExisting ? 1 : 0,
         is_repledged: form.is_repledged === 1 ? 1 : 0,
-        // Serialise all bank entries as JSON for multi-bank re-pledge support
         repledged_entries: form.is_repledged === 1
           ? JSON.stringify(bankEntries.filter(e => e.bank && e.amount))
           : null,
-        // Legacy single-entry fields (first entry for backward compat)
         repledged_bank: form.is_repledged === 1 && bankEntries[0]?.bank ? bankEntries[0].bank : null,
         repledged_receipt_no: form.is_repledged === 1 && bankEntries[0]?.loan_no ? bankEntries[0].loan_no : null,
         repledged_amount: form.is_repledged === 1 && bankEntries[0]?.amount ? parseFloat(bankEntries[0].amount) : null,
@@ -593,19 +586,7 @@ export default function PledgeFormView({
         repledged_name: form.is_repledged === 1 && bankEntries[0]?.name ? bankEntries[0].name : null,
       };
 
-      const res = await addSubEntry(db.id, form.date, "pledge", pledgeData);
-
-      // 3. Post corresponding Credit entry (Banda) if interest was taken upfront
-      const interestTakenAmount = parseFloat(form.interest_taken_amount) || 0;
-
-      if (form.interest_taken_upfront && interestTakenAmount > 0) {
-        await addSubEntry(db.id, form.date, "credit", {
-          name: `Banda No. ${form.pledge_no}`,
-          particulars: `${prefix}Girvi Banda interest`,
-          amount: interestTakenAmount,
-          remarks: `Banda interest taken upfront while pledging for Pawner ${form.customer_name} (Pledge ${form.pledge_no})`,
-        });
-      }
+      const res = await createPledgeEntry(pledgeData);
 
       showNotification(`Pledge ${form.pledge_no} saved successfully!`, "success");
       setLoading(false);

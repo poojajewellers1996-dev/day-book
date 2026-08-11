@@ -1,141 +1,14 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
 
-# --- Base Schemas ---
-
-class EntryBase(BaseModel):
-    name: str
-    particulars: str
-    amount: float
-    remarks: Optional[str] = None
-
-class DebitEntryCreate(EntryBase):
-    pass
-
-class DebitEntryUpdate(EntryBase):
-    name: Optional[str] = None
-    particulars: Optional[str] = None
-    amount: Optional[float] = None
-
-class DebitEntry(EntryBase):
-    id: int
-    daybook_id: int
-
-    class Config:
-        from_attributes = True
-
-class CreditEntryCreate(EntryBase):
-    pass
-
-class CreditEntryUpdate(EntryBase):
-    name: Optional[str] = None
-    particulars: Optional[str] = None
-    amount: Optional[float] = None
-
-class CreditEntry(EntryBase):
-    id: int
-    daybook_id: int
-
-    class Config:
-        from_attributes = True
-
-# --- Sold Items ---
-
-class SoldItemBase(BaseModel):
-    item_name: str
-    quantity: int
-    weight: float
-    amount: float = 0.0
-
-class SoldItemCreate(SoldItemBase):
-    pass
-
-class SoldItemUpdate(SoldItemBase):
-    item_name: Optional[str] = None
-    quantity: Optional[int] = None
-    weight: Optional[float] = None
-    amount: Optional[float] = None
-
-class SoldItem(SoldItemBase):
-    id: int
-    daybook_id: int
-
-    class Config:
-        from_attributes = True
-
-# --- PhonePe / UPI ---
-
-class PhonePeEntryBase(BaseModel):
-    customer_name: str
-    amount: float
-
-class PhonePeEntryCreate(PhonePeEntryBase):
-    pass
-
-class PhonePeEntryUpdate(PhonePeEntryBase):
-    customer_name: Optional[str] = None
-    amount: Optional[float] = None
-
-class PhonePeEntry(PhonePeEntryBase):
-    id: int
-    daybook_id: int
-
-    class Config:
-        from_attributes = True
-
-# --- Old Gold ---
-
-class OldGoldEntryBase(BaseModel):
-    customer_name: str
-    weight: float
-    amount: float
-
-class OldGoldEntryCreate(OldGoldEntryBase):
-    pass
-
-class OldGoldEntryUpdate(OldGoldEntryBase):
-    customer_name: Optional[str] = None
-    weight: Optional[float] = None
-    amount: Optional[float] = None
-
-class OldGoldEntry(OldGoldEntryBase):
-    id: int
-    daybook_id: int
-
-    class Config:
-        from_attributes = True
-
-# --- Old Silver ---
-
-class OldSilverEntryBase(BaseModel):
-    customer_name: str
-    weight: float
-    amount: float
-
-class OldSilverEntryCreate(OldSilverEntryBase):
-    pass
-
-class OldSilverEntryUpdate(OldSilverEntryBase):
-    customer_name: Optional[str] = None
-    weight: Optional[float] = None
-    amount: Optional[float] = None
-
-class OldSilverEntry(OldSilverEntryBase):
-    id: int
-    daybook_id: int
-
-    class Config:
-        from_attributes = True
-
-# --- Pledge Payment ---
+# --- Pledge Payment Schemas ---
 
 class PledgePaymentBase(BaseModel):
     pledge_id: int
-    daybook_id: int
     date: str
-    payment_type: str  # "INTEREST" or "PRINCIPAL"
+    payment_type: str  # "INTEREST" or "PRINCIPAL" or "TOP_UP"
     amount: float
-    payment_method: str
+    payment_method: str  # "CASH", "UPI", "OTHER"
 
 class PledgePaymentCreate(BaseModel):
     payment_type: str
@@ -149,7 +22,8 @@ class PledgePayment(PledgePaymentBase):
     class Config:
         from_attributes = True
 
-# --- Pledge ---
+
+# --- Pledge Entry Schemas ---
 
 class PledgeEntryBase(BaseModel):
     customer_name: str
@@ -157,6 +31,7 @@ class PledgeEntryBase(BaseModel):
     weight: float
     amount: float
     interest_percentage: float
+    date: str  # ISO Date YYYY-MM-DD when the pledge was created
     pledge_no: Optional[str] = None
     pawner_relation: Optional[str] = None
     pawner_relation_name: Optional[str] = None
@@ -199,7 +74,7 @@ class PledgeEntryBase(BaseModel):
     repledged_date: Optional[str] = None
     repledged_name: Optional[str] = None
     repledged_receipt_no: Optional[str] = None
-    repledged_entries: Optional[str] = None  # JSON string: [{name,bank,date,amount},...]
+    repledged_entries: Optional[str] = None  # JSON string
 
 class PledgeEntryCreate(PledgeEntryBase):
     pass
@@ -246,7 +121,6 @@ class PledgeEntryUpdate(BaseModel):
     customer_photo: Optional[str] = None
     item_photo: Optional[str] = None
     date: Optional[str] = None
-    pledge_no: Optional[str] = None
     is_existing: Optional[int] = None
     is_repledged: Optional[int] = None
     repledged_bank: Optional[str] = None
@@ -258,112 +132,13 @@ class PledgeEntryUpdate(BaseModel):
 
 class PledgeEntry(PledgeEntryBase):
     id: int
-    daybook_id: int
-    date: Optional[str] = None
     payments: List[PledgePayment] = []
 
     class Config:
         from_attributes = True
 
-# --- Release ---
 
-class ReleaseEntryBase(BaseModel):
-    customer_name: str
-    principal_amount: float
-    interest_received: float
-
-class ReleaseEntryCreate(ReleaseEntryBase):
-    pass
-
-class ReleaseEntryUpdate(ReleaseEntryBase):
-    customer_name: Optional[str] = None
-    principal_amount: Optional[float] = None
-    interest_received: Optional[float] = None
-
-class ReleaseEntry(ReleaseEntryBase):
-    id: int
-    daybook_id: int
-
-    class Config:
-        from_attributes = True
-
-# --- DayBook ---
-
-class DayBookBase(BaseModel):
-    date: str # YYYY-MM-DD
-    opening_cash: float = 0.0
-    opening_upi: float = 0.0
-    opening_other: float = 0.0
-    closing_cash: float = 0.0
-    closing_upi: float = 0.0
-    closing_other: float = 0.0
-    opening_upi_details: Optional[str] = "{}"
-    closing_upi_details: Optional[str] = "{}"
-    is_manually_adjusted: Optional[int] = 0
-
-class DayBookCreate(DayBookBase):
-    pass
-
-class DayBookUpdate(BaseModel):
-    opening_cash: Optional[float] = None
-    opening_upi: Optional[float] = None
-    opening_other: Optional[float] = None
-    closing_cash: Optional[float] = None
-    closing_upi: Optional[float] = None
-    closing_other: Optional[float] = None
-    opening_upi_details: Optional[str] = None
-    closing_upi_details: Optional[str] = None
-    is_manually_adjusted: Optional[int] = None
-
-class DayBookResponse(DayBookBase):
-    id: int
-    debit_entries: List[DebitEntry] = []
-    credit_entries: List[CreditEntry] = []
-    sold_items: List[SoldItem] = []
-    phonepe_entries: List[PhonePeEntry] = []
-    old_gold_entries: List[OldGoldEntry] = []
-    old_silver_entries: List[OldSilverEntry] = []
-    pledge_entries: List[PledgeEntry] = []
-    release_entries: List[ReleaseEntry] = []
-
-    class Config:
-        from_attributes = True
-
-
-# --- Purchase Party / Supplier ---
-
-class PurchasePartyCreate(BaseModel):
-    name: str
-    phone: Optional[str] = None
-    gstin: Optional[str] = None
-    opening_balance_cash: float = 0.0
-    opening_balance_gold: float = 0.0
-    opening_balance_silver: float = 0.0
-    address: Optional[str] = None
-
-class PurchasePartyResponse(BaseModel):
-    id: int
-    name: str
-    phone: Optional[str] = None
-    gstin: Optional[str] = None
-    opening_balance_cash: float
-    opening_balance_gold: float
-    opening_balance_silver: float
-    address: Optional[str] = None
-    created_at: Optional[str] = None
-
-    class Config:
-        from_attributes = True
-
-class SupplierPaymentCreate(BaseModel):
-    amount: float
-    payment_mode: str  # "CASH", "UPI", "OTHER"
-    date: str          # YYYY-MM-DD
-    remarks: Optional[str] = None
-    is_rate_cut: Optional[bool] = False
-    rate: Optional[float] = None
-    metal: Optional[str] = None  # "GOLD" or "SILVER"
-
+# --- System Log Schema ---
 
 class SystemLogResponse(BaseModel):
     id: int
@@ -373,6 +148,3 @@ class SystemLogResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-

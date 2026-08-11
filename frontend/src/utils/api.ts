@@ -619,6 +619,26 @@ export async function fetchOutstandingUdhar(): Promise<OutstandingUdhar[]> {
   }
 }
 
+export async function createPledgeEntry(data: any): Promise<{ success: boolean; item?: PledgeEntry }> {
+  try {
+    const res = await fetch(`${API_BASE}/pledges`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (res.ok) {
+      const item = await res.json();
+      if (isBrowser) {
+        localStorage.removeItem("pooja_all_pledges");
+      }
+      return { success: true, item };
+    }
+  } catch (err) {
+    console.error("Failed to create pledge", err);
+  }
+  return { success: false };
+}
+
 export async function fetchAllPledges(): Promise<PledgeEntry[]> {
   try {
     const res = await fetch(`${API_BASE}/pledges`);

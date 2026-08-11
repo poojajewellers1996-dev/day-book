@@ -7,7 +7,7 @@ import {
   Filter, ArrowUpDown, XCircle, RotateCcw, SlidersHorizontal,
   Plus, History, Check, DollarSign, ArrowDownRight, Trash2
 } from "lucide-react";
-import { PledgeEntry, fetchAllPledges, updatePledgeEntry, fetchDayBook, addSubEntry } from "../utils/api";
+import { PledgeEntry, fetchAllPledges, updatePledgeEntry } from "../utils/api";
 export const UPI_ACCOUNTS = [
   { key: "hdfc_192", label: "HDFC Bank CA - 192" },
   { key: "hdfc_od_7442", label: "HDFC OD - 7442" },
@@ -31,7 +31,7 @@ const formatDateDMY = (dateStr: string | undefined) => {
 
 interface BankRePledgeLedgerViewProps {
   currentDate: string;
-  onRefreshDaybook: () => void;
+  onRefreshDaybook?: () => void;
   showNotification: (msg: string, type: "success" | "info" | "error") => void;
 }
 
@@ -400,45 +400,8 @@ export default function BankRePledgeLedgerView({
       const ok = await updatePledgeEntry(origPledge.id, payload, dateStr);
 
       if (ok) {
-        // Auto-Add Debit Entry (Javak) in Day Book for payDate
-        try {
-          const upiPrefix =
-            interestPayMode === "HDFC"
-              ? "[UPI:hdfc_192] "
-              : interestPayMode === "HDFC_OD"
-              ? "[UPI:hdfc_od_7442] "
-              : interestPayMode === "UPI"
-              ? "[UPI:hdfc_192] "
-              : interestPayMode === "OTHER"
-              ? "[OTHER] "
-              : "";
-
-          const modeLabel =
-            interestPayMode === "HDFC"
-              ? " (HDFC Bank)"
-              : interestPayMode === "HDFC_OD"
-              ? " (HDFC OD)"
-              : interestPayMode === "UPI"
-              ? " (UPI/PhonePe)"
-              : interestPayMode === "OTHER"
-              ? " (Other Bank)"
-              : " (Cash)";
-
-          const dbRes = await fetchDayBook(payDate);
-          if (dbRes && dbRes.data) {
-            await addSubEntry(dbRes.data.id, payDate, "debit", {
-              name: interestPayMode === "HDFC" || interestPayMode === "HDFC_OD" ? "HDFC Bank" : interestPayMode === "UPI" ? "PhonePe/UPI" : "Bank Interest",
-              particulars: `${upiPrefix}Bank Interest Paid: Loan #${selectedRecordForInterest.bankLoanNo || selectedRecordForInterest.pledgeNos.join("/")} (${selectedRecordForInterest.bankName})${modeLabel}`,
-              amount: amt,
-              remarks: `Payment Method: ${interestPayMode}`,
-            });
-          }
-        } catch (err) {
-          console.warn("Failed to auto-add Debit entry to Day Book:", err);
-        }
-
         showNotification(
-          `Added ₹${amt.toLocaleString("en-IN")} Bank Interest payment for Loan #${selectedRecordForInterest.bankLoanNo || selectedRecordForInterest.pledgeNos.join("/")} & recorded Debit in Day Book!`,
+          `Added ₹${amt.toLocaleString("en-IN")} Bank Interest payment for Loan #${selectedRecordForInterest.bankLoanNo || selectedRecordForInterest.pledgeNos.join("/")}!`,
           "success"
         );
         setShowInterestModal(false);
@@ -446,7 +409,6 @@ export default function BankRePledgeLedgerView({
         setInterestPayAmount("");
         setInterestPayRemarks("");
         loadData();
-        onRefreshDaybook();
       } else {
         showNotification("Failed to save interest payment", "error");
       }
@@ -502,7 +464,7 @@ export default function BankRePledgeLedgerView({
             };
           });
           loadData();
-          onRefreshDaybook();
+          onRefreshDaybook?.();
         } else {
           showNotification("Failed to delete interest payment", "error");
         }
@@ -605,91 +567,13 @@ export default function BankRePledgeLedgerView({
       const ok = await updatePledgeEntry(origPledge.id, payload, dateStr);
 
       if (ok) {
-        // Auto-Add Debit Entry (Javak) in Day Book for releaseBankDate
-        try {
-          const dbRes = await fetchDayBook(relDate);
-          if (dbRes && dbRes.data) {
-            const loanLabel = `Loan #${selectedRecordForRelease.bankLoanNo || selectedRecordForRelease.pledgeNos.join("/")} (${selectedRecordForRelease.bankName})`;
-
-            if (isSplitMode) {
-              const acc1Obj = UPI_ACCOUNTS.find(a => a.key === releaseSplitAccount);
-              const acc1Label = acc1Obj ? acc1Obj.label : releaseSplitAccount;
-              const acc2Obj = UPI_ACCOUNTS.find(a => a.key === releaseSplitAccount2);
-              const acc2Label = acc2Obj ? acc2Obj.label : releaseSplitAccount2;
-
-              if (splitCashVal > 0) {
-                await addSubEntry(dbRes.data.id, relDate, "debit", {
-                  name: "Bank Loan Release (Cash)",
-                  particulars: `Bank Loan Paid & Released (Cash): ${loanLabel}`,
-                  amount: splitCashVal,
-                  remarks: `Split Release Cash | Principal: ₹${relPrincipal} | Interest: ₹${relInterest}`,
-                });
-              }
-
-              if (splitUpiVal > 0) {
-                await addSubEntry(dbRes.data.id, relDate, "debit", {
-                  name: acc1Label,
-                  particulars: `[UPI:${releaseSplitAccount}] Bank Loan Paid & Released (${acc1Label}): ${loanLabel}`,
-                  amount: splitUpiVal,
-                  remarks: `Split Release Account 1 (${acc1Label})`,
-                });
-              }
-
-              if (splitOtherVal > 0) {
-                await addSubEntry(dbRes.data.id, relDate, "debit", {
-                  name: acc2Label,
-                  particulars: `[UPI:${releaseSplitAccount2}] Bank Loan Paid & Released (${acc2Label}): ${loanLabel}`,
-                  amount: splitOtherVal,
-                  remarks: `Split Release Account 2 (${acc2Label})`,
-                });
-              }
-            } else {
-              const upiPrefix =
-                releaseBankMode === "HDFC"
-                  ? "[UPI:hdfc_192] "
-                  : releaseBankMode === "HDFC_OD"
-                  ? "[UPI:hdfc_od_7442] "
-                  : releaseBankMode === "UPI"
-                  ? "[UPI:hdfc_192] "
-                  : releaseBankMode === "OTHER"
-                  ? "[OTHER] "
-                  : "";
-
-              const modeLabel =
-                releaseBankMode === "HDFC"
-                  ? " (HDFC Bank)"
-                  : releaseBankMode === "HDFC_OD"
-                  ? " (HDFC OD)"
-                  : releaseBankMode === "UPI"
-                  ? " (UPI/PhonePe)"
-                  : releaseBankMode === "OTHER"
-                  ? " (Other Bank)"
-                  : " (Cash)";
-
-              const detailStr = relInterest > 0
-                ? `${loanLabel} - Principal ₹${relPrincipal.toLocaleString("en-IN")} + Interest ₹${relInterest.toLocaleString("en-IN")}`
-                : loanLabel;
-
-              await addSubEntry(dbRes.data.id, relDate, "debit", {
-                name: releaseBankMode === "HDFC" || releaseBankMode === "HDFC_OD" ? "HDFC Bank" : releaseBankMode === "UPI" ? "PhonePe/UPI" : "Bank Loan Release",
-                particulars: `${upiPrefix}Bank Loan Paid & Released: ${detailStr}${modeLabel}`,
-                amount: totalPaidBack,
-                remarks: `Release Payment Method: ${releaseBankMode} | Principal: ₹${relPrincipal} | Interest: ₹${relInterest}`,
-              });
-            }
-          }
-        } catch (err) {
-          console.warn("Failed to auto-add Debit entry to Day Book:", err);
-        }
-
         showNotification(
-          `Released Bank Loan #${selectedRecordForRelease.bankLoanNo || selectedRecordForRelease.pledgeNos.join("/")} (Total ₹${totalPaidBack.toLocaleString("en-IN")}) & recorded Debit in Day Book!`,
+          `Released Bank Loan #${selectedRecordForRelease.bankLoanNo || selectedRecordForRelease.pledgeNos.join("/")} (Total ₹${totalPaidBack.toLocaleString("en-IN")})!`,
           "success"
         );
         setShowReleaseBankModal(false);
         setSelectedRecordForRelease(null);
         loadData();
-        onRefreshDaybook();
       } else {
         showNotification("Failed to release bank loan", "error");
       }
@@ -765,7 +649,7 @@ export default function BankRePledgeLedgerView({
         showNotification(`Bank details updated for Girvi ${editingPledge.pledge_no}!`, "success");
         setEditingPledge(null);
         loadData();
-        onRefreshDaybook();
+        onRefreshDaybook?.();
       } else {
         showNotification("Failed to update bank details", "error");
       }

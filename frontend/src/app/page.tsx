@@ -12,14 +12,12 @@ import {
   Archive, FolderOpen, Users, History, Calculator, Landmark, ShieldCheck, Layers,
 } from "lucide-react";
 import {
-  DayBook, fetchDayBook, syncOfflineQueue, PledgeEntry, saveDayBookCash, SoldItem, fetchAllSoldItems,
-  OldGoldEntry, OldSilverEntry, downloadDatabaseBackup, restoreDatabaseBackup, API_BASE,
+  PledgeEntry, downloadDatabaseBackup, restoreDatabaseBackup, API_BASE,
 } from "../utils/api";
 import { exportBackup, importBackup } from "../utils/backup";
 import { exportToPDF } from "../utils/pdf";
 import { fetchInternetTime, getSyncedDate, getSyncedDateString, getIsInternetTimeSynced, checkSystemVsGoogleTime, TimeCheckResult } from "../utils/timeUtils";
 import LuxuryLogin from "../components/LuxuryLogin";
-import OpeningSetupModal from "../components/OpeningSetupModal";
 import GirviLedgerView from "../components/GirviLedgerView";
 import PledgeFormView from "../components/PledgeFormView";
 import SystemLogsView from "../components/SystemLogsView";
@@ -178,242 +176,13 @@ export default function Dashboard() {
   }, []);
 
   const [currentDate, setCurrentDate] = useState<string>(() => getSyncedDateString());
-  const [daybook, setDaybook] = useState<DayBook | null>(null);
+  const [daybook, setDaybook] = useState<any>(null);
   const [isSynced, setIsSynced] = useState<boolean>(true);
   const [syncing, setSyncing] = useState<boolean>(false);
   const [showTimeSyncModal, setShowTimeSyncModal] = useState<boolean>(false);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "info" | "error" } | null>(null);
   const [selectedPrintPledge, setSelectedPrintPledge] = useState<PledgeEntry | null>(null);
   const [printBackSide, setPrintBackSide] = useState<boolean>(false);
-  const [selectedPrintBill, setSelectedPrintBill] = useState<SoldItem | null>(null);
-  const [billType, setBillType] = useState<"estimate" | "gst">("gst");
-  const [billCustomerName, setBillCustomerName] = useState("");
-  const [billCustomerMobile, setBillCustomerMobile] = useState("");
-  const [billCustomerAddress, setBillCustomerAddress] = useState("");
-  const [billItemName, setBillItemName] = useState("");
-  const [billWeight, setBillWeight] = useState("");
-  const [billQuantity, setBillQuantity] = useState("1");
-  const [billTotalAmount, setBillTotalAmount] = useState("");
-  const [billMetal, setBillMetal] = useState<"GOLD" | "SILVER">("GOLD");
-  const [billDate, setBillDate] = useState("");
-  const [billRatePerGram, setBillRatePerGram] = useState("");
-  const [billWastage, setBillWastage] = useState("");
-  const [billMaking, setBillMaking] = useState("");
-  const [billCustomerAadhar, setBillCustomerAadhar] = useState("");
-  const [billCustomerPan, setBillCustomerPan] = useState("");
-  const [billInvoiceNo, setBillInvoiceNo] = useState("");
-  const [billBookNo, setBillBookNo] = useState("");
-  const [billPurity, setBillPurity] = useState("");
-  const [billItems, setBillItems] = useState<SoldItem[]>([]);
-  const [billOldGoldItems, setBillOldGoldItems] = useState<OldGoldEntry[]>([]);
-  const [billOldSilverItems, setBillOldSilverItems] = useState<OldSilverEntry[]>([]);
-  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
-  const [billCashAmount, setBillCashAmount] = useState(0);
-  const [billUpiAmount, setBillUpiAmount] = useState(0);
-  const [billOtherAmount, setBillOtherAmount] = useState(0);
-
-  // Bank and Shop configuration states
-  const [billBankName, setBillBankName] = useState("HDFC Bank");
-  const [billBankBranch, setBillBankBranch] = useState("Budigere");
-  const [billBankAccountNo, setBillBankAccountNo] = useState("5020000192192");
-  const [billBankIfsc, setBillBankIfsc] = useState("HDFC0000192");
-  const [billGstin, setBillGstin] = useState("29AXMPS9006P1ZF");
-  const [billPropName, setBillPropName] = useState("Shankar Lal");
-
-  // Fetch daybook for the selected print bill date if not currently active
-  useEffect(() => {
-    if (selectedPrintBill && selectedPrintBill.date) {
-      if (!daybook || daybook.date !== selectedPrintBill.date) {
-        fetchDayBook(selectedPrintBill.date).then(res => {
-          if (res && res.data) {
-            setDaybook(res.data);
-          }
-        });
-      }
-    }
-  }, [selectedPrintBill]);
-
-  useEffect(() => {
-    if (selectedPrintBill) {
-      let name = selectedPrintBill.item_name || "";
-      const metal = name.includes("SILVER") ? "SILVER" : "GOLD";
-
-      // Parse customer metadata
-      let custName = "";
-      let custMobile = "";
-      let custAddress = "";
-      let custAadhar = "";
-      let custPan = "";
-      const custMatch = name.match(/\[CUST:([^\]]+)\]/);
-      if (custMatch) {
-        const parts = custMatch[1].split("|");
-        custName = parts[0] || "";
-        custMobile = parts[1] || "";
-        custAddress = parts[2] || "";
-        custAadhar = parts[3] || "";
-        custPan = parts[4] || "";
-      }
-
-      // Grouped items: find all items belonging to this exact bill transaction in the daybook
-      let grouped: SoldItem[] = [];
-      let groupedOldGold: OldGoldEntry[] = [];
-      let groupedOldSilver: OldSilverEntry[] = [];
-
-      const billMatch = name.match(/\[BILL:([^\]]+)\]/);
-      const invMatch = name.match(/\[INV:([^\]]+)\]/);
-
-      if (daybook) {
-        if (billMatch) {
-          const billPattern = billMatch[0];
-          if (daybook.sold_items) {
-            grouped = daybook.sold_items.filter(item => item.item_name.includes(billPattern));
-          }
-        } else if (invMatch) {
-          const invPattern = invMatch[0];
-          if (daybook.sold_items) {
-            grouped = daybook.sold_items.filter(item => item.item_name.includes(invPattern));
-          }
-        } else if (custMatch) {
-          const parts = custMatch[1].split("|");
-          const custNamePart = parts[0]?.trim();
-          if (custNamePart) {
-            const custPattern = custMatch[0];
-            if (daybook.sold_items) {
-              grouped = daybook.sold_items.filter(item => item.item_name.includes(custPattern));
-            }
-          }
-        }
-
-        if (custMatch) {
-          const custPattern = custMatch[0];
-          if (daybook.old_gold_entries) {
-            groupedOldGold = daybook.old_gold_entries.filter(item => item.customer_name.includes(custPattern));
-          }
-          if (daybook.old_silver_entries) {
-            groupedOldSilver = daybook.old_silver_entries.filter(item => item.customer_name.includes(custPattern));
-          }
-        }
-      }
-
-      if (grouped.length === 0) {
-        grouped = [selectedPrintBill];
-      }
-      setBillItems(grouped);
-      setBillOldGoldItems(groupedOldGold);
-      setBillOldSilverItems(groupedOldSilver);
-
-      // Parse price metadata
-      let rate = "";
-      let wastage = "";
-      let making = "";
-      let purity = "";
-      const priceMatch = name.match(/\[PRICE:([^\]]+)\]/);
-      if (priceMatch) {
-        const parts = priceMatch[1].split("|");
-        rate = parts[0] || "";
-        wastage = parts[1] || "";
-        making = parts[2] || "";
-        purity = parts[3] || "";
-      }
-
-      // Parse SPLIT payment metadata — format: [SPLIT:C<cash>:U<upi>:O<other>]
-      const splitMatch = name.match(/\[SPLIT:C([\d.]+):U([\d.]+):O([\d.]+)\]/);
-      if (splitMatch) {
-        setBillCashAmount(parseFloat(splitMatch[1]) || 0);
-        setBillUpiAmount(parseFloat(splitMatch[2]) || 0);
-        setBillOtherAmount(parseFloat(splitMatch[3]) || 0);
-      } else {
-        setBillCashAmount(0);
-        setBillUpiAmount(0);
-        setBillOtherAmount(0);
-      }
-
-      // Parse INVOICE & BOOK metadata
-      const typeMatch = name.match(/\[TYPE:([^\]]+)\]/);
-      const isGst = typeMatch ? typeMatch[1].trim().toUpperCase() === "GST" : name.includes("[GST]");
-
-      let invNo = invMatch ? invMatch[1].trim() : "";
-
-      const bookMatch = name.match(/\[BOOK:([^\]]+)\]/);
-      let bookNo = bookMatch ? bookMatch[1].trim() : "";
-
-      // Clean item name
-      name = name
-        .replace(/^\[(GOLD|SILVER)\]\s*/i, "")
-        .replace(/\[SPLIT:[^\]]+\]\s*/i, "")
-        .replace(/\[CUST:[^\]]+\]\s*/i, "")
-        .replace(/\[INV:[^\]]+\]\s*/i, "")
-        .replace(/\[BOOK:[^\]]+\]\s*/i, "")
-        .replace(/\[PRICE:[^\]]+\]\s*/i, "")
-        .replace(/\[BARCODE:[^\]]+\]\s*/i, "")
-        .trim();
-
-      setBillItemName(name);
-      setBillWeight(selectedPrintBill.weight ? selectedPrintBill.weight.toString() : "");
-      setBillQuantity(selectedPrintBill.quantity ? selectedPrintBill.quantity.toString() : "1");
-      setBillTotalAmount(selectedPrintBill.amount ? selectedPrintBill.amount.toString() : "");
-      setBillMetal(metal);
-      setBillCustomerName(custName);
-      setBillCustomerMobile(custMobile);
-      setBillCustomerAddress(custAddress);
-      setBillCustomerAadhar(custAadhar);
-      setBillCustomerPan(custPan);
-      setBillInvoiceNo(invNo);
-      setBillBookNo(bookNo);
-      setBillPurity(purity);
-      setBillRatePerGram(rate);
-      setBillWastage(wastage);
-      setBillMaking(making);
-      setBillDate(selectedPrintBill.date || currentDate || new Date().toISOString().split("T")[0]);
-      setBillType("gst");
-    }
-  }, [selectedPrintBill, currentDate, daybook]);
-
-  const isMultiItem = billItems.length > 1;
-  const totalVal = isMultiItem
-    ? billItems.reduce((sum, item) => sum + (item.amount || 0), 0)
-    : (parseFloat(billTotalAmount) || 0);
-  const weightVal = parseFloat(billWeight) || 0;
-  const rateVal = parseFloat(billRatePerGram) || 0;
-  const wastageVal = parseFloat(billWastage) || 0;
-  const makingVal = parseFloat(billMaking) || 0;
-
-  const calculatedBase = totalVal / 1.03;
-  const cgstVal = Math.round(calculatedBase * 0.015 * 100) / 100;
-  const sgstVal = Math.round(calculatedBase * 0.015 * 100) / 100;
-  const baseAmount = Math.round((totalVal - cgstVal - sgstVal) * 100) / 100;
-
-  const oldExchangeTotal = [...billOldGoldItems, ...billOldSilverItems].reduce((sum, item) => sum + item.amount, 0);
-  const netPayableVal = Math.max(0, totalVal - oldExchangeTotal);
-
-  // Generate dynamic QR Code for Invoice Verification
-  useEffect(() => {
-    if (selectedPrintBill) {
-      const activeInvNo = billInvoiceNo || "—";
-      const activeClient = billCustomerName || "Cash Customer";
-      const activeDate = billDate || selectedPrintBill.date || "";
-      const activeTotal = netPayableVal || selectedPrintBill.amount || 0;
-
-      const qrPayload = `POOJA JEWELLERS - SALE INVOICE\nInvoice No: ${activeInvNo}\nBook No: ${billBookNo || '—'}\nDate: ${activeDate}\nClient: ${activeClient}\nNet Amount: ₹${activeTotal.toFixed(2)}\nGSTIN: ${billGstin}\nStatus: VERIFIED PAID`;
-
-      QRCode.toDataURL(qrPayload, {
-        width: 140,
-        margin: 1,
-        color: {
-          dark: "#0b5c33",
-          light: "#ffffff",
-        },
-      })
-        .then((url) => setQrCodeDataUrl(url))
-        .catch((err) => console.error("Failed to generate invoice QR Code:", err));
-    }
-  }, [selectedPrintBill, billInvoiceNo, billBookNo, billDate, billCustomerName, netPayableVal, billGstin]);
-
-  const rawMetalValue = weightVal * rateVal;
-  const computedWastageAndMaking = rateVal > 0 ? Math.max(0, baseAmount - rawMetalValue) : 0;
-  const displayRate = rateVal > 0 ? rateVal : (weightVal > 0 ? (baseAmount / weightVal) : 0);
-
-  const ratePerGram = displayRate;
 
   const pathname = usePathname();
   const router = useRouter();
@@ -699,13 +468,6 @@ export default function Dashboard() {
 
     if (localStorage.getItem("pooja_daybook_auth") === "true") {
       setIsAuthenticated(true);
-      // Check if this is first-time use (no opening balance ever set)
-      if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
-        fetch(`${API_BASE}/setup/is-first-time`)
-          .then(r => r.json())
-          .then(data => { if (data.first_time) setShowSetup(true); })
-          .catch(() => { }); // ignore if backend down
-      }
     }
 
     // Check server run ID every 5 seconds to detect restarts in real-time
@@ -741,14 +503,6 @@ export default function Dashboard() {
             localStorage.setItem("pooja_daybook_auth", "true");
             setIsAuthenticated(true);
             router.push("/daybook");
-            
-            if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
-              const setupRes = await fetch(`${API_BASE}/setup/is-first-time`);
-              if (setupRes.ok) {
-                const setupData = await setupRes.json();
-                if (setupData.first_time) setShowSetup(true);
-              }
-            }
             return true;
           }
         }
@@ -761,53 +515,10 @@ export default function Dashboard() {
       localStorage.setItem("pooja_daybook_auth", "true");
       setIsAuthenticated(true);
       router.push("/daybook");
-
-      // Check first-time setup after login
-      if (localStorage.getItem("pooja_daybook_setup_done") !== "true") {
-        const setupRes = await fetch(`${API_BASE}/setup/is-first-time`);
-        if (setupRes.ok) {
-          const setupData = await setupRes.json();
-          if (setupData.first_time) setShowSetup(true);
-        }
-      }
       return true;
     } catch (err) {
       console.error("Login request error:", err);
       return false;
-    }
-  };
-
-  // Handle opening balance setup completion
-  const handleSetupComplete = async (cash: number, upi: number, other: number, upiDetails?: string) => {
-    if (!currentDate) return;
-    const res = await fetchDayBook(currentDate);
-    const db = res.data;
-    const isNew = !db || (!db.debit_entries?.length && !db.credit_entries?.length && !db.sold_items?.length && !db.phonepe_entries?.length && !db.pledge_entries?.length && !db.release_entries?.length);
-    await saveDayBookCash(
-      db.id, currentDate,
-      cash, upi, other,
-      isNew ? cash : db.closing_cash,
-      isNew ? upi : db.closing_upi,
-      isNew ? other : db.closing_other,
-      upiDetails,
-      isNew ? upiDetails : undefined
-    );
-    localStorage.setItem("pooja_daybook_setup_done", "true");
-    setShowSetup(false);
-    showNotification("Opening balance saved! Aaj ka hisaab shuru karo. 🙏", "success");
-    loadDayBookData(currentDate);
-  };
-
-  // Verify password before allowing opening balance edit
-  const handleVerifyPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput.toLowerCase() === "pooja" || passwordInput === "pooja123") {
-      setShowPasswordPrompt(false);
-      setPasswordInput("");
-      setPasswordError("");
-      setShowSetup(true); // Open setup modal
-    } else {
-      setPasswordError("Incorrect password. Please try again!");
     }
   };
 
@@ -829,36 +540,6 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Load daybook
-  const loadDayBookData = async (dateStr: string) => {
-    if (!dateStr) return;
-    const res = await fetchDayBook(dateStr);
-    setDaybook(res.data);
-    setIsSynced(res.synced);
-  };
-
-  useEffect(() => {
-    if (currentDate && isAuthenticated) loadDayBookData(currentDate);
-  }, [currentDate, isAuthenticated]);
-
-  // Auto-sync
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      if (navigator.onLine && isAuthenticated) {
-        try {
-          const count = await syncOfflineQueue();
-          if (count > 0) {
-            showNotification(`Synced ${count} offline records`, "success");
-            if (currentDate) loadDayBookData(currentDate);
-          }
-        } catch (e: any) {
-          console.warn("Auto-sync interval error:", e.message || e);
-        }
-      }
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [currentDate, isAuthenticated]);
-
   function showNotification(message: string, type: "success" | "info" | "error" = "info") {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
@@ -871,196 +552,12 @@ export default function Dashboard() {
     setCurrentDate(d.toISOString().split("T")[0]);
   };
 
-
   const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const ok = await importBackup(file);
     showNotification(ok ? "Backup imported!" : "Import failed.", ok ? "success" : "error");
-    if (ok && currentDate) loadDayBookData(currentDate);
   };
-
-  const triggerPDFExport = async () => {
-    if (!currentDate) return;
-    showNotification("Generating Day Book PDF…", "info");
-    await exportToPDF("daybook-print-area", currentDate);
-    showNotification("PDF Exported!", "success");
-  };
-
-  const triggerManualSync = async () => {
-    setSyncing(true);
-    showNotification("Syncing with cloud…", "info");
-    const count = await syncOfflineQueue();
-    setSyncing(false);
-    showNotification(count > 0 ? `Synced ${count} records` : "All data up to date", "success");
-    if (currentDate) loadDayBookData(currentDate);
-  };
-
-  // ── Calculations ──────────────────────────────────────────────────────────
-  const parseSoldSplit = (name: string, totalAmount: number) => {
-    const match = name.match(/\[SPLIT:C([\d.]+):U([\d.]+)(?::O([\d.]+))?\]/);
-    if (match) return { cash: parseFloat(match[1]) || 0, upi: parseFloat(match[2]) || 0, other: parseFloat(match[3]) || 0 };
-    return { cash: totalAmount, upi: 0, other: 0 };
-  };
-
-  const soldTotal = daybook?.sold_items.reduce((s, i) => s + i.amount, 0) || 0;
-  const getGroupedSoldItems = (items: SoldItem[]) => {
-    const seen = new Set<string>();
-    return items.filter(i => {
-      const match = i.item_name.match(/\[BILL:([^\]]+)\]/);
-      if (match) {
-        const billId = match[1];
-        if (seen.has(billId)) return false;
-        seen.add(billId);
-      }
-      return true;
-    });
-  };
-  const groupedSoldItems = getGroupedSoldItems(daybook?.sold_items || []);
-  const soldCash = groupedSoldItems.reduce((s, i) => s + parseSoldSplit(i.item_name, i.amount).cash, 0);
-  const soldUpi = groupedSoldItems.reduce((s, i) => s + parseSoldSplit(i.item_name, i.amount).upi, 0);
-  const soldOther = groupedSoldItems.reduce((s, i) => s + parseSoldSplit(i.item_name, i.amount).other, 0);
-
-  const pledgeTotal = daybook?.pledge_entries.reduce((s, i) => {
-    const totalTopUps = (i.payments || []).filter(p => p.payment_type === "TOP_UP").reduce((sum, p) => sum + p.amount, 0);
-    return s + (i.amount - totalTopUps);
-  }, 0) || 0;
-  const releaseTotal = daybook?.release_entries.reduce((s, i) => s + i.principal_amount, 0) || 0;
-  const releaseInt = daybook?.release_entries.reduce((s, i) => s + i.interest_received, 0) || 0;
-  const interestEarned = releaseInt;
-
-  // Filter out auto-posted Girvi entries from page totals
-  const filteredDebitEntries = daybook?.debit_entries.filter(item => {
-    const nameLower = item.name.toLowerCase();
-    const partLower = item.particulars.toLowerCase();
-    return !nameLower.includes("girvi no.") && !partLower.includes("girvi pledge");
-  }) || [];
-
-  const filteredCreditEntries = daybook?.credit_entries.filter(item => {
-    const nameLower = item.name.toLowerCase();
-    const partLower = item.particulars.toLowerCase();
-    return !nameLower.includes("chhudai no.") &&
-      !nameLower.includes("banda no.") &&
-      !partLower.includes("girvi release") &&
-      !partLower.includes("girvi banda");
-  }) || [];
-
-  const bandaTotal = daybook?.credit_entries
-    .filter(item => item.name.toLowerCase().includes("banda no.") || item.particulars.toLowerCase().includes("girvi banda"))
-    .reduce((s, i) => s + i.amount, 0) || 0;
-
-  const bandaCash = daybook?.credit_entries
-    .filter(item => item.name.toLowerCase().includes("banda no.") || item.particulars.toLowerCase().includes("girvi banda"))
-    .filter(i => !i.particulars.startsWith("[UPI") && !i.particulars.startsWith("[OTHER]"))
-    .reduce((s, i) => s + i.amount, 0) || 0;
-
-  const bandaUpi = daybook?.credit_entries
-    .filter(item => item.name.toLowerCase().includes("banda no.") || item.particulars.toLowerCase().includes("girvi banda"))
-    .filter(i => i.particulars.startsWith("[UPI"))
-    .reduce((s, i) => s + i.amount, 0) || 0;
-
-  const bandaOther = daybook?.credit_entries
-    .filter(item => item.name.toLowerCase().includes("banda no.") || item.particulars.toLowerCase().includes("girvi banda"))
-    .filter(i => i.particulars.startsWith("[OTHER]"))
-    .reduce((s, i) => s + i.amount, 0) || 0;
-
-  const debitTotal = (filteredDebitEntries.reduce((s, i) => s + i.amount, 0) || 0) + pledgeTotal;
-  const creditTotal = (filteredCreditEntries.reduce((s, i) => s + i.amount, 0) || 0) + soldTotal + releaseTotal + interestEarned + bandaTotal;
-
-  const isUpiEntry = (item: any) => {
-    const combined = `${item.particulars || ''} ${item.remarks || ''} ${item.name || ''}`;
-    return (
-      combined.startsWith("[UPI") ||
-      /\[UPI(?::[^\]]+)?\]/i.test(combined) ||
-      /\[(hdfc_192|hdfc_od_7442|pooja_068|shankarlal_832|vikash|vikram|deepak|kavitha)\]/i.test(combined) ||
-      /Payment Method:\s*(HDFC|HDFC_192|HDFC_OD|UPI)/i.test(combined) ||
-      /\((HDFC Bank|HDFC OD|PhonePe|UPI)\)/i.test(combined)
-    );
-  };
-  const isOtherEntry = (item: any) => {
-    const combined = `${item.particulars || ''} ${item.remarks || ''} ${item.name || ''}`;
-    return combined.startsWith("[OTHER]") || /Payment Method:\s*OTHER/i.test(combined);
-  };
-
-  const debitUPI = filteredDebitEntries.filter(i => isUpiEntry(i)).reduce((s, i) => s + i.amount, 0) || 0;
-  const creditUPI = filteredCreditEntries.filter(i => isUpiEntry(i)).reduce((s, i) => s + i.amount, 0) || 0;
-  const debitOther = filteredDebitEntries.filter(i => isOtherEntry(i)).reduce((s, i) => s + i.amount, 0) || 0;
-  const creditOther = filteredCreditEntries.filter(i => isOtherEntry(i)).reduce((s, i) => s + i.amount, 0) || 0;
-
-  const pledgeCash = daybook?.pledge_entries.reduce((sum, item) => {
-    const totalTopUps = (item.payments || []).filter(p => p.payment_type === "TOP_UP").reduce((s, p) => s + p.amount, 0);
-    const initialAmount = item.amount - totalTopUps;
-    const match = item.customer_name.match(/\[SPLIT:C([\d.]+):U([\d.]+)(?::O([\d.]+))?(?::A[^\]]*)?\]/);
-    if (match) return sum + (parseFloat(match[1]) || 0);
-    if (!item.customer_name.startsWith("[UPI") && !item.customer_name.startsWith("[OTHER]")) return sum + initialAmount;
-    return sum;
-  }, 0) || 0;
-
-  const pledgeUpi = daybook?.pledge_entries.reduce((sum, item) => {
-    const totalTopUps = (item.payments || []).filter(p => p.payment_type === "TOP_UP").reduce((s, p) => s + p.amount, 0);
-    const initialAmount = item.amount - totalTopUps;
-    const match = item.customer_name.match(/\[SPLIT:C([\d.]+):U([\d.]+)(?::O([\d.]+))?(?::A[^\]]*)?\]/);
-    if (match) return sum + (parseFloat(match[2]) || 0);
-    if (item.customer_name.startsWith("[UPI")) return sum + initialAmount;
-    return sum;
-  }, 0) || 0;
-
-  const pledgeOther = daybook?.pledge_entries.reduce((sum, item) => {
-    const totalTopUps = (item.payments || []).filter(p => p.payment_type === "TOP_UP").reduce((s, p) => s + p.amount, 0);
-    const initialAmount = item.amount - totalTopUps;
-    const match = item.customer_name.match(/\[SPLIT:C([\d.]+):U([\d.]+)(?::O([\d.]+))?(?::A[^\]]*)?\]/);
-    if (match) return sum + (parseFloat(match[3]) || 0);
-    if (item.customer_name.startsWith("[OTHER]")) return sum + initialAmount;
-    return sum;
-  }, 0) || 0;
-
-  const releaseCash = daybook?.release_entries.reduce((sum, item) => {
-    const total = item.principal_amount + item.interest_received;
-    const match = item.customer_name.match(/\[SPLIT:C([\d.]+):U([\d.]+)(?::O([\d.]+))?(?::A[^\]]*)?\]/);
-    if (match) return sum + (parseFloat(match[1]) || 0);
-    if (!item.customer_name.startsWith("[UPI") && !item.customer_name.startsWith("[OTHER]")) return sum + total;
-    return sum;
-  }, 0) || 0;
-
-  const releaseUpi = daybook?.release_entries.reduce((sum, item) => {
-    const total = item.principal_amount + item.interest_received;
-    const match = item.customer_name.match(/\[SPLIT:C([\d.]+):U([\d.]+)(?::O([\d.]+))?(?::A[^\]]*)?\]/);
-    if (match) return sum + (parseFloat(match[2]) || 0);
-    if (item.customer_name.startsWith("[UPI")) return sum + total;
-    return sum;
-  }, 0) || 0;
-
-  const releaseOther = daybook?.release_entries.reduce((sum, item) => {
-    const total = item.principal_amount + item.interest_received;
-    const match = item.customer_name.match(/\[SPLIT:C([\d.]+):U([\d.]+)(?::O([\d.]+))?(?::A[^\]]*)?\]/);
-    if (match) return sum + (parseFloat(match[3]) || 0);
-    if (item.customer_name.startsWith("[OTHER]")) return sum + total;
-    return sum;
-  }, 0) || 0;
-
-  const debitCash = filteredDebitEntries.filter(i => !isUpiEntry(i.particulars) && !isOtherEntry(i.particulars)).reduce((s, i) => s + i.amount, 0) || 0;
-  const creditCash = filteredCreditEntries.filter(i => !isUpiEntry(i.particulars) && !isOtherEntry(i.particulars)).reduce((s, i) => s + i.amount, 0) || 0;
-  const upiTotal = daybook?.phonepe_entries.reduce((s, i) => s + i.amount, 0) || 0;
-
-  const totalUPIRec = upiTotal + creditUPI + releaseUpi + bandaUpi;
-  const totalUPIGiven = debitUPI + pledgeUpi;
-  const totalOtherRec = creditOther + soldOther + releaseOther + bandaOther;
-  const totalOtherGiven = debitOther + pledgeOther;
-  const cashRec = Math.max(0, creditCash + soldCash + releaseCash + bandaCash);
-  const cashGiven = debitCash + pledgeCash;
-
-  const openingCash = daybook?.opening_cash || 0;
-  const openingUpi = daybook?.opening_upi || 0;
-  const openingOther = daybook?.opening_other || 0;
-  const openingTotal = openingCash + openingUpi + openingOther;
-
-  const closingCash = openingCash + cashRec - cashGiven;
-  const closingUpi = openingUpi + totalUPIRec - totalUPIGiven;
-  const closingOther = openingOther + totalOtherRec - totalOtherGiven;
-  const closingTotal = closingCash + closingUpi + closingOther;
-
-  const goldSold = daybook?.sold_items.filter(i => i.item_name.includes("GOLD")).reduce((s, i) => s + i.weight, 0) || 0;
-  const silverSold = daybook?.sold_items.filter(i => i.item_name.includes("SILVER")).reduce((s, i) => s + i.weight, 0) || 0;
 
 
   // ── Guard: Login ──────────────────────────────────────────────────────────
@@ -1088,7 +585,7 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Main App Content (hidden when printing modal overlay) ── */}
-      <div className={`flex flex-col flex-1 ${selectedPrintPledge || selectedPrintBill ? "print:hidden" : ""}`}>
+      <div className={`flex flex-col flex-1 ${selectedPrintPledge ? "print:hidden" : ""}`}>
         {/* ════════════════════════════════
             TOP NAVBAR
         ════════════════════════════════ */}
@@ -1246,15 +743,6 @@ export default function Dashboard() {
           {/* Action buttons (Desktop only) */}
           {["pledges", "pledge_form", "existing_girvi"].includes(activeNav) && (
             <>
-              <button
-                onClick={triggerPDFExport}
-                title="Export Full Page PDF"
-                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-semibold transition-colors hover:bg-amber-50 cursor-pointer"
-                style={{ border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}
-              >
-                <FileText size={14} />
-                <span className="hidden sm:inline">PDF</span>
-              </button>
 
               <button
                 onClick={exportBackup}
@@ -1276,20 +764,7 @@ export default function Dashboard() {
                 <input type="file" accept=".json" onChange={handleImportBackup} className="hidden" />
               </label>
 
-              <button
-                onClick={triggerManualSync}
-                title="Sync Now"
-                className="hidden md:flex h-9 items-center gap-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer"
-                style={{
-                  background: "linear-gradient(135deg,#c8960c,#D4AF37)",
-                  color: "#fff",
-                  border: "none",
-                  boxShadow: "0 2px 8px rgba(212,175,55,0.3)",
-                }}
-              >
-                <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
-                <span className="hidden sm:inline">Sync</span>
-              </button>
+
             </>
           )}
 
@@ -1519,7 +994,6 @@ export default function Dashboard() {
             {activeNav === "pledge_form" && (
               <PledgeFormView
                 currentDate={currentDate}
-                daybookId={daybook?.id || 0}
                 onSuccess={(pledge) => {
                   setSelectedPrintPledge(pledge);
                   setActiveNav("pledges");
@@ -1530,7 +1004,6 @@ export default function Dashboard() {
             {activeNav === "existing_girvi" && (
               <PledgeFormView
                 currentDate={currentDate}
-                daybookId={daybook?.id || 0}
                 isExisting={true}
                 onSuccess={(pledge) => {
                   setSelectedPrintPledge(pledge);
@@ -1552,8 +1025,6 @@ export default function Dashboard() {
             {activeNav === "pledges" && (
               <GirviLedgerView
                 currentDate={currentDate}
-                daybookId={daybook?.id || 0}
-                onRefreshDaybook={() => loadDayBookData(currentDate)}
                 onSelectPrintPledge={(p) => setSelectedPrintPledge(p)}
                 showNotification={showNotification}
                 onSwitchToForm={() => setActiveNav("pledge_form")}
@@ -1562,7 +1033,6 @@ export default function Dashboard() {
             {activeNav === "bank_repledge" && (
               <BankRePledgeLedgerView
                 currentDate={currentDate}
-                onRefreshDaybook={() => loadDayBookData(currentDate)}
                 showNotification={showNotification}
               />
             )}
@@ -1570,7 +1040,6 @@ export default function Dashboard() {
             {activeNav === "settings" && (
               <SettingsView
                 currentDate={currentDate}
-                onRefresh={loadDayBookData}
                 showNotification={showNotification}
               />
             )}
@@ -1595,98 +1064,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── FIRST-TIME SETUP MODAL ── */}
-      {showSetup && (
-        <div className="print-hidden">
-          <OpeningSetupModal
-            date={currentDate}
-            onComplete={handleSetupComplete}
-            initialCash={daybook?.opening_cash}
-            initialUpi={daybook?.opening_upi}
-            initialOther={daybook?.opening_other}
-            initialUpiDetails={daybook?.opening_upi_details}
-          />
-        </div>
-      )}
 
-      {/* ── SECURITY VERIFICATION MODAL ── */}
-      {showPasswordPrompt && (
-        <div
-          className="print-hidden fixed inset-0 z-[110] flex items-center justify-center px-4"
-          style={{ background: "rgba(45,27,14,0.65)", backdropFilter: "blur(4px)" }}
-        >
-          <div
-            style={{
-              background: "white",
-              borderRadius: 24,
-              maxWidth: 380,
-              width: "100%",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.18), 0 4px 16px rgba(212,175,55,0.1)",
-              overflow: "hidden",
-            }}
-          >
-            <div style={{ height: 4, background: "#D4AF37" }} />
-            <div className="px-6 py-6 text-center">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-200 mx-auto mb-3 text-xl">
-                🔑
-              </div>
-              <h3 className="font-bold text-base mb-1" style={{ color: "#2D1B0E", fontFamily: "Georgia, serif" }}>
-                Admin Authentication
-              </h3>
-              <p className="text-xs mb-4" style={{ color: "#8B7355" }}>
-                Enter the password to adjust opening balances.
-              </p>
 
-              <form onSubmit={handleVerifyPassword} className="space-y-3">
-                <div>
-                  <input
-                    type="password"
-                    placeholder="Enter password"
-                    value={passwordInput}
-                    onChange={(e) => {
-                      setPasswordInput(e.target.value);
-                      setPasswordError("");
-                    }}
-                    autoFocus
-                    className="w-full px-4 py-2.5 rounded-xl border border-amber-200 outline-none font-bold text-center text-sm focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
-                    style={{ background: "#FFFBF5" }}
-                  />
-                  {passwordError && (
-                    <p className="text-[10px] text-red-600 font-semibold mt-1.5">{passwordError}</p>
-                  )}
-                </div>
 
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPasswordPrompt(false);
-                      setPasswordInput("");
-                      setPasswordError("");
-                    }}
-                    className="flex-1 py-2.5 rounded-xl font-bold text-xs transition-colors bg-white hover:bg-amber-50/50"
-                    style={{ border: "1px solid rgba(212,175,55,0.3)", color: "#8B6914" }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 py-2.5 rounded-xl font-black text-xs uppercase tracking-wide transition-all"
-                    style={{
-                      background: "linear-gradient(135deg,#c8960c,#D4AF37)",
-                      color: "#4A2800",
-                      boxShadow: "0 2px 8px rgba(212,175,55,0.25)",
-                      border: "none",
-                    }}
-                  >
-                    Verify
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── STANDALONE REFERENCE INTEREST CALCULATOR MODAL (GLOBAL) ── */}
       {showGlobalCalcModal && (
@@ -2293,759 +1673,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── SALES BILL PRINT PREVIEW OVERLAY ── */}
-      {selectedPrintBill && (
-        <div id="print-bill-overlay-wrapper" className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-start justify-center p-4 py-8 overflow-y-auto print:absolute print:inset-0 print:bg-white print:p-0 print:shadow-none">
-          <style>{`
-            @media print {
-              @page {
-                size: A4 portrait;
-                margin: 8mm 10mm;
-              }
-
-              /* Step 1: Make EVERYTHING invisible */
-              body {
-                visibility: hidden !important;
-                background: white !important;
-                background-color: white !important;
-              }
-              body * {
-                visibility: hidden !important;
-              }
-
-              /* Step 2: Make ONLY the bill overlay visible */
-              #print-bill-overlay-wrapper,
-              #print-bill-overlay-wrapper * {
-                visibility: visible !important;
-              }
-
-              /* Step 3: Position the overlay to fill the page from top */
-              #print-bill-overlay-wrapper {
-                position: fixed !important;
-                top: 0 !important;
-                left: 0 !important;
-                width: 100% !important;
-                height: auto !important;
-                overflow: visible !important;
-                background: white !important;
-                background-color: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                display: flex !important;
-                align-items: flex-start !important;
-                justify-content: center !important;
-              }
-
-              /* Step 4: Hide the settings panel */
-              .print-hidden {
-                display: none !important;
-                visibility: hidden !important;
-              }
-
-              /* Step 5: Style the invoice area */
-              #print-bill-preview-area {
-                width: 100% !important;
-                max-width: 190mm !important;
-                margin: 0 auto !important;
-                padding: 0 !important;
-                border: none !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-                background-color: white !important;
-                background: white !important;
-                display: block !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-
-              #print-bill-preview-area * {
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              .green-print-header {
-                background-color: #0b5c33 !important;
-                color: #ffffff !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              .green-print-header th {
-                background-color: #0b5c33 !important;
-                color: #ffffff !important;
-              }
-              .final-amount-row {
-                background-color: #0b5c33 !important;
-                color: #ffffff !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-              }
-              .final-amount-row span {
-                color: #ffffff !important;
-              }
-            }
-          `}</style>
-          <div className="bg-amber-50/15 max-w-6xl w-full rounded-3xl shadow-2xl p-6 relative flex flex-col md:flex-row gap-6 print:p-0 print:shadow-none print:w-full print:max-w-none print:bg-white print:flex-col print:gap-0" style={{ backgroundColor: "#FFFBF4", border: "1px solid rgba(212,175,55,0.25)" }}>
-
-            {/* Left Panel: Settings Form (Hidden in print) */}
-            <div className="w-full md:w-5/12 bg-white rounded-2xl p-4 border border-amber-900/10 shadow-sm print:hidden flex flex-col justify-between">
-              <div>
-                <h3 className="font-serif font-bold text-base text-amber-950 mb-3 pb-2 border-b border-amber-900/10 flex items-center gap-1.5">
-                  📝 Sales Bill Settings
-                </h3>
-
-                {/* Bill Type Toggle */}
-                <div className="mb-4">
-                  <label className="block text-[11px] font-bold text-amber-900 uppercase tracking-wider mb-1">Bill Type</label>
-                  <div className="grid grid-cols-2 gap-2 bg-amber-50/50 p-1.5 rounded-xl border border-amber-900/10">
-                    <button
-                      type="button"
-                      onClick={() => setBillType("estimate")}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${billType === "estimate"
-                        ? "bg-amber-800 text-white shadow-xs"
-                        : "text-amber-900 hover:bg-amber-100/50"
-                        }`}
-                    >
-                      Estimate Bill
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBillType("gst")}
-                      className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all ${billType === "gst"
-                        ? "bg-diary-red text-white shadow-xs"
-                        : "text-amber-900 hover:bg-amber-100/50"
-                        }`}
-                    >
-                      GST Invoice (3%)
-                    </button>
-                  </div>
-                </div>
-
-                {/* Customer Details */}
-                <div className="mb-4 space-y-2.5">
-                  <h4 className="text-[10px] font-bold text-amber-900 uppercase tracking-widest border-b border-dotted pb-1">Customer Info</h4>
-                  <div>
-                    <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Customer Name</label>
-                    <input
-                      type="text"
-                      value={billCustomerName}
-                      onChange={(e) => setBillCustomerName(e.target.value)}
-                      placeholder="Enter Customer Name"
-                      className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none focus:ring-1 focus:ring-amber-800"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Mobile No</label>
-                      <input
-                        type="text"
-                        value={billCustomerMobile}
-                        onChange={(e) => setBillCustomerMobile(e.target.value)}
-                        placeholder="Enter Mobile"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none focus:ring-1 focus:ring-amber-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Bill Date</label>
-                      <input
-                        type="date"
-                        value={billDate}
-                        onChange={(e) => setBillDate(e.target.value)}
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none focus:ring-1 focus:ring-amber-800"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Address</label>
-                    <input
-                      type="text"
-                      value={billCustomerAddress}
-                      onChange={(e) => setBillCustomerAddress(e.target.value)}
-                      placeholder="Enter Address"
-                      className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none focus:ring-1 focus:ring-amber-800"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Aadhar No</label>
-                      <input
-                        type="text"
-                        value={billCustomerAadhar}
-                        onChange={(e) => setBillCustomerAadhar(e.target.value)}
-                        placeholder="Aadhar No"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">PAN No</label>
-                      <input
-                        type="text"
-                        value={billCustomerPan}
-                        onChange={(e) => setBillCustomerPan(e.target.value)}
-                        placeholder="PAN No"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Item Details */}
-                <div className="mb-4 space-y-2.5">
-                  <h4 className="text-[10px] font-bold text-amber-900 uppercase tracking-widest border-b border-dotted pb-1">Item Info</h4>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2">
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Item Description</label>
-                      <input
-                        type="text"
-                        value={billItemName}
-                        onChange={(e) => setBillItemName(e.target.value)}
-                        placeholder="Item name"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-950 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Purity</label>
-                      <input
-                        type="text"
-                        value={billPurity}
-                        onChange={(e) => setBillPurity(e.target.value)}
-                        placeholder="Purity"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Weight (g)</label>
-                      <input
-                        type="number"
-                        step="0.001"
-                        value={billWeight}
-                        onChange={(e) => setBillWeight(e.target.value)}
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2 py-1.5 text-xs text-amber-950 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Quantity (pc)</label>
-                      <input
-                        type="number"
-                        value={billQuantity}
-                        onChange={(e) => setBillQuantity(e.target.value)}
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2 py-1.5 text-xs text-amber-950 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Metal</label>
-                      <select
-                        value={billMetal}
-                        onChange={(e) => setBillMetal(e.target.value as any)}
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2 py-1.5 text-xs text-amber-950 focus:outline-none font-bold"
-                      >
-                        <option value="GOLD">Gold</option>
-                        <option value="SILVER">Silver</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-amber-900 uppercase mb-0.5">Total Amount Paid (₹)</label>
-                    <input
-                      type="number"
-                      value={billTotalAmount}
-                      onChange={(e) => setBillTotalAmount(e.target.value)}
-                      placeholder="Enter amount customer paid"
-                      className="w-full bg-amber-100/30 border border-amber-900/20 rounded-lg px-2.5 py-1.5 text-xs font-bold text-amber-955 focus:outline-none focus:ring-1 focus:ring-amber-800"
-                    />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Rate / g (₹)</label>
-                      <input
-                        type="number"
-                        value={billRatePerGram}
-                        onChange={(e) => setBillRatePerGram(e.target.value)}
-                        placeholder="Rate"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Wastage (%)</label>
-                      <input
-                        type="number"
-                        value={billWastage}
-                        onChange={(e) => setBillWastage(e.target.value)}
-                        placeholder="Wastage %"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-semibold text-amber-900 mb-0.5">Making (₹)</label>
-                      <input
-                        type="number"
-                        value={billMaking}
-                        onChange={(e) => setBillMaking(e.target.value)}
-                        placeholder="Making"
-                        className="w-full bg-amber-50/20 border border-amber-900/15 rounded-lg px-2.5 py-1.5 text-xs text-amber-955 focus:outline-none font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Auto Calculated Preview */}
-                <div className="bg-amber-50/40 border border-amber-900/10 rounded-xl p-3 text-[11px] space-y-1 text-amber-950 font-serif font-semibold">
-                  <div className="flex justify-between">
-                    <span>Base Taxable Amount:</span>
-                    <span className="font-sans font-bold">₹{baseAmount.toFixed(2)}</span>
-                  </div>
-                  <>
-                    <div className="flex justify-between text-amber-900/80">
-                      <span>CGST (1.5%):</span>
-                      <span className="font-sans font-bold">+ ₹{cgstVal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-amber-900/80">
-                      <span>SGST (1.5%):</span>
-                      <span className="font-sans font-bold">+ ₹{sgstVal.toFixed(2)}</span>
-                    </div>
-                  </>
-                  <div className="flex justify-between border-t border-amber-900/10 pt-1 mt-1 text-xs text-diary-red font-bold">
-                    <span>Grand Total:</span>
-                    <span className="font-sans">₹{totalVal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] text-amber-900/60 pt-0.5">
-                    <span>Rate/Gram:</span>
-                    <span className="font-sans">₹{ratePerGram.toFixed(2)}/g</span>
-                  </div>
-                </div>
-
-                {/* Shop & Bank Configuration */}
-                <div className="mt-4 p-3 bg-amber-50/20 border border-amber-900/10 rounded-xl space-y-2 text-amber-950 font-sans">
-                  <h4 className="text-[10px] font-bold text-amber-900 uppercase tracking-widest border-b border-dashed pb-1">Shop &amp; Bank Settings</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">Invoice No</label>
-                      <input
-                        type="text"
-                        value={billInvoiceNo}
-                        onChange={(e) => setBillInvoiceNo(e.target.value)}
-                        placeholder="Invoice No"
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none font-mono font-bold text-emerald-800"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">Book No</label>
-                      <input
-                        type="text"
-                        value={billBookNo}
-                        onChange={(e) => setBillBookNo(e.target.value)}
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none font-mono font-bold"
-                        placeholder="Book No"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">GSTIN No</label>
-                      <input
-                        type="text"
-                        value={billGstin}
-                        onChange={(e) => setBillGstin(e.target.value)}
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">Prop Name</label>
-                      <input
-                        type="text"
-                        value={billPropName}
-                        onChange={(e) => setBillPropName(e.target.value)}
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">Bank Name</label>
-                      <input
-                        type="text"
-                        value={billBankName}
-                        onChange={(e) => setBillBankName(e.target.value)}
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">Bank Branch</label>
-                      <input
-                        type="text"
-                        value={billBankBranch}
-                        onChange={(e) => setBillBankBranch(e.target.value)}
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">Account No</label>
-                      <input
-                        type="text"
-                        value={billBankAccountNo}
-                        onChange={(e) => setBillBankAccountNo(e.target.value)}
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] font-semibold text-amber-900">IFSC Code</label>
-                      <input
-                        type="text"
-                        value={billBankIfsc}
-                        onChange={(e) => setBillBankIfsc(e.target.value)}
-                        className="w-full bg-white border border-amber-900/15 rounded px-2 py-1 text-[10px] focus:outline-none font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2.5 mt-5 font-sans">
-                <button
-                  onClick={() => window.print()}
-                  className="flex-1 bg-diary-red text-white py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm hover:bg-diary-crimson transition-all"
-                >
-                  🖨️ Print Bill
-                </button>
-                <button
-                  onClick={() => setSelectedPrintBill(null)}
-                  className="px-4 py-2 border border-amber-300 hover:bg-amber-50 rounded-xl text-xs font-bold text-amber-900 transition-colors"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-
-            {/* Right Panel: Printable Bill Invoice Preview */}
-            <div
-              id="print-bill-preview-area"
-              className="w-full md:w-7/12 bg-white shadow-md rounded-2xl border border-amber-900/10 print:border-none print:shadow-none print:w-full print:bg-white"
-              style={{
-                padding: "8mm 10mm",
-                fontFamily: "Georgia, serif",
-                color: "#000000",
-                boxSizing: "border-box",
-                fontSize: "13px",
-              }}
-            >
-              {/* Invoice Layout */}
-              {/* Header (GSTIN, Tax Invoice title, Prop Name) */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", fontFamily: "times new roman", fontWeight: 700, borderBottom: "1px solid black", paddingBottom: "4px", marginBottom: "6px" }}>
-                <span>GSTIN : {billGstin}</span>
-                <span style={{ fontSize: "16px", textTransform: "uppercase", fontFamily: "times new roman", fontWeight: 900, textDecoration: "underline", letterSpacing: "2px" }}>SALE INVOICE</span>
-                <span>Prop : {billPropName}</span>
-              </div>
-
-              {/* Main Shop Info Header */}
-              <div style={{ display: "grid", gridTemplateColumns: "1.2fr 4.6fr 1.2fr", alignItems: "center", gap: "8px", marginBottom: "6px", borderBottom: "2px solid black", paddingBottom: "6px" }}>
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <img src="/bis_logo.png" alt="BIS Hallmark Logo" style={{ width: "120px", height: "120px", objectFit: "contain" }} />
-                </div>
-                <div style={{ textAlign: "center" }}>
-                  <h1 style={{ margin: 0, fontSize: "28px", fontWeight: 900, fontFamily: "Times New Roman, serif", textTransform: "uppercase", letterSpacing: "3px" }}>Pooja Jewellers</h1>
-                  <p style={{ margin: "2px 0 0", fontSize: "10px", fontFamily: "times new roman", fontWeight: 800, textTransform: "uppercase" }}>MFRS.IN HIGH CLASS GOLD &amp; SILVER ORNAMENTS, 916, KDM, 75 HALL MARK JEWELLERY</p>
-                  <p style={{ margin: "1px 0 0", fontSize: "10px", fontFamily: "times new roman", fontWeight: 600 }}>Ground Floor, Manjushree Complex, Main Road, Near Busstand, Budigere, Devanhalli taluk 562129</p>
-                  <p style={{ margin: "1px 0 0", fontSize: "9px", fontFamily: "times new roman", fontWeight: 700 }}>Mobile: +91 8660100547, +91 9880518013 | Gmail: poojajewellers1996@gmail.com</p>
-                </div>
-                <div style={{ display: "flex", justifyContent: "center" }}>
-                  <img src="/logo.png" alt="Pooja Jewellers Logo" style={{ width: "100px", height: "100px", objectFit: "contain" }} />
-                </div>
-              </div>
-
-              {/* Invoice No, Book No & Date Header Row */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", fontFamily: "sans-serif", fontWeight: 700, borderBottom: "2px double black", paddingBottom: "5px", marginBottom: "8px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ fontSize: "10px", color: "rgba(0,0,0,0.6)", textTransform: "uppercase" }}>INVOICE NO :</span>
-                  <span style={{ fontFamily: "monospace", fontWeight: 900, fontSize: "13px", color: "#0b5c33", background: "rgba(11,92,51,0.06)", padding: "1px 6px", borderRadius: "4px" }}>
-                    {billInvoiceNo || "—"}
-                  </span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ fontSize: "10px", color: "rgba(0,0,0,0.6)", textTransform: "uppercase" }}>BOOK NO :</span>
-                  <span style={{ fontFamily: "monospace", fontWeight: 800, fontSize: "12px" }}>{billBookNo || "—"}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                  <span style={{ fontSize: "10px", color: "rgba(0,0,0,0.6)", textTransform: "uppercase" }}>DATE :</span>
-                  <span style={{ fontFamily: "monospace", fontWeight: 900, fontSize: "13px" }}>{formatDateDMY(billDate)}</span>
-                </div>
-              </div>
-
-              {/* Customer Details Box */}
-              <div style={{ border: "1px solid black", borderRadius: "6px", overflow: "hidden", marginBottom: "10px", fontSize: "13px" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "7fr 5fr", borderBottom: "1px solid rgba(0,0,0,0.2)", padding: "7px 10px", gap: "6px", background: "rgba(0,0,0,0.01)" }}>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
-                    <span style={{ fontFamily: "sans-serif", fontWeight: 700, fontSize: "11px", color: "rgba(0,0,0,0.55)", textTransform: "uppercase", whiteSpace: "nowrap" }}>Client Name :</span>
-                    <span style={{ flex: 1, fontFamily: "Georgia, serif", fontWeight: 900, paddingLeft: "4px", color: "black", fontSize: "13px" }}>{billCustomerName || "Cash Customer"}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", paddingLeft: "8px", borderLeft: "1px solid rgba(0,0,0,0.1)" }}>
-                    <span style={{ fontFamily: "sans-serif", fontWeight: 700, fontSize: "11px", color: "rgba(0,0,0,0.55)", textTransform: "uppercase", whiteSpace: "nowrap" }}>Phone :</span>
-                    <span style={{ flex: 1, fontFamily: "monospace", fontWeight: 700, paddingLeft: "4px", fontSize: "13px" }}>{billCustomerMobile || "—"}</span>
-                  </div>
-                </div>
-                <div style={{ padding: "6px 10px", display: "grid", gridTemplateColumns: "7fr 5fr", gap: "6px" }}>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: "4px" }}>
-                    <span style={{ fontFamily: "sans-serif", fontWeight: 700, fontSize: "11px", color: "rgba(0,0,0,0.55)", textTransform: "uppercase", whiteSpace: "nowrap" }}>Address :</span>
-                    <span style={{ flex: 1, fontFamily: "Georgia, serif", fontWeight: 600, paddingLeft: "4px", fontSize: "13px" }}>{billCustomerAddress || "—"}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", paddingLeft: "8px", borderLeft: "1px solid rgba(0,0,0,0.1)" }}>
-                    <span style={{ fontFamily: "sans-serif", fontWeight: 700, fontSize: "11px", color: "rgba(0,0,0,0.55)", textTransform: "uppercase", whiteSpace: "nowrap" }}>Aadhar :</span>
-                    <span style={{ flex: 1, fontFamily: "monospace", fontWeight: 700, paddingLeft: "4px", fontSize: "13px" }}>{billCustomerAadhar || "—"}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Items Description Table */}
-              <table style={{ width: "100%", textAlign: "left", fontSize: "13px", border: "1px solid black", borderRadius: "6px", overflow: "hidden", marginBottom: "10px", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr className="green-print-header" style={{ background: "#0b5c33", backgroundColor: "#0b5c33", color: "white", textAlign: "center", fontWeight: 800, fontSize: "12px", textTransform: "uppercase" }}>
-                    <th colSpan={7} style={{ padding: "6px 8px", borderBottom: "1px solid black", color: "white", backgroundColor: "#0b5c33" }}>New Purchase</th>
-                  </tr>
-                  <tr className="green-print-header" style={{ background: "#0b5c33", backgroundColor: "#0b5c33", color: "white", borderBottom: "1px solid black", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>
-                    <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "36px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Sr.</th>
-                    <th style={{ padding: "6px 8px", borderRight: "1px solid black", textAlign: "left", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Description of Goods</th>
-                    <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "65px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Wastage %</th>
-                    <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "90px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Making Charge</th>
-                    <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "85px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Weight (g)</th>
-                    <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "75px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Rate/g</th>
-                    <th style={{ padding: "6px 8px", width: "95px", textAlign: "right", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {billItems.map((item, index) => {
-                    let itemName = item.item_name || "";
-                    let rate = "", wastage = "", making = "", purity = "";
-                    const priceMatch = itemName.match(/\[PRICE:([^\]]+)\]/);
-                    if (priceMatch) {
-                      const parts = priceMatch[1].split("|");
-                      rate = parts[0] || ""; wastage = parts[1] || ""; making = parts[2] || ""; purity = parts[3] || "";
-                    }
-                    const cleanName = itemName
-                      .replace(/^\[(GOLD|SILVER)\]\s*/i, "").replace(/\[SPLIT:[^\]]+\]\s*/i, "").replace(/\[CUST:[^\]]+\]\s*/i, "")
-                      .replace(/\[PRICE:[^\]]+\]\s*/i, "").replace(/\[BARCODE:[^\]]+\]\s*/i, "").trim();
-                    const rateValRow = isMultiItem ? (parseFloat(rate) || 0) : (parseFloat(billRatePerGram) || 0);
-                    const wastageValRow = isMultiItem ? (parseFloat(wastage) || 0) : (parseFloat(billWastage) || 0);
-                    let makingValRow = isMultiItem ? (parseFloat(making) || 0) : (parseFloat(billMaking) || 0);
-                    const weightValRow = isMultiItem ? (item.weight || 0) : (parseFloat(billWeight) || 0);
-                    const itemAmount = isMultiItem ? (item.amount || 0) : totalVal;
-                    const itemBaseAmount = itemAmount / 1.03;
-                    if (makingValRow <= 0 && rateValRow > 0 && weightValRow > 0 && itemAmount > 0) {
-                      const metalBase = weightValRow * rateValRow;
-                      const wastageAmt = metalBase * (wastageValRow / 100);
-                      const derived = itemBaseAmount - metalBase - wastageAmt;
-                      if (derived > 0) makingValRow = derived;
-                    }
-                    return (
-                      <tr key={item.id || index} style={{ borderBottom: "1px solid rgba(0,0,0,0.15)", textAlign: "center", minHeight: "44px", color: "black", fontWeight: 600 }}>
-                        <td style={{ padding: "10px 4px", borderRight: "1px solid black", color: "rgba(0,0,0,0.45)" }}>{index + 1}</td>
-                        <td style={{ padding: "10px 8px", borderRight: "1px solid black", textAlign: "left", fontFamily: "Georgia, serif", fontWeight: 900, textTransform: "uppercase" }}>
-                          <div style={{ fontSize: "14px" }}>{cleanName || "Gold/Silver Ornament"}</div>
-                          {purity && <div style={{ fontSize: "10px", fontFamily: "sans-serif", fontWeight: 700, color: "rgba(0,0,0,0.55)", marginTop: "2px" }}>Purity: {purity}</div>}
-                        </td>
-                        <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{wastageValRow > 0 ? `${wastageValRow}%` : "—"}</td>
-                        <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{makingValRow > 0 ? `₹${makingValRow.toFixed(2)}` : "—"}</td>
-                        <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{weightValRow.toFixed(3)}</td>
-                        <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{rateValRow > 0 ? `₹${rateValRow.toFixed(0)}` : "—"}</td>
-                        <td style={{ padding: "10px 8px", fontFamily: "sans-serif", fontWeight: 900, textAlign: "right", fontSize: "14px" }}>₹{itemBaseAmount.toFixed(2)}</td>
-                      </tr>
-                    );
-                  })}
-                  {Array.from({ length: Math.max(0, 3 - billItems.length) }).map((_, idx) => (
-                    <tr key={idx} style={{ height: "36px", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                      <td style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}></td>
-                      <td style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}></td>
-                      <td style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}></td>
-                      <td style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}></td>
-                      <td style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}></td>
-                      <td style={{ borderRight: "1px solid rgba(0,0,0,0.15)" }}></td>
-                      <td></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* Old Gold/Silver Exchange Table */}
-              {(billOldGoldItems.length > 0 || billOldSilverItems.length > 0) && (
-                <div style={{ marginTop: "10px" }}>
-                  <table style={{ width: "100%", textAlign: "left", fontSize: "13px", border: "1px solid black", borderRadius: "6px", overflow: "hidden", marginBottom: "10px", borderCollapse: "collapse" }}>
-                    <thead>
-                      <tr className="green-print-header" style={{ background: "#0b5c33", backgroundColor: "#0b5c33", color: "white", textAlign: "center", fontWeight: 800, fontSize: "12px", textTransform: "uppercase" }}>
-                        <th colSpan={7} style={{ padding: "6px 8px", borderBottom: "1px solid black", color: "white", backgroundColor: "#0b5c33" }}>Old Gold Exchange</th>
-                      </tr>
-                      <tr className="green-print-header" style={{ background: "#0b5c33", backgroundColor: "#0b5c33", color: "white", borderBottom: "1px solid black", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.5px", textAlign: "center" }}>
-                        <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "36px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Sr.</th>
-                        <th style={{ padding: "6px 8px", borderRight: "1px solid black", textAlign: "left", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Description of Exchange Item</th>
-                        <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "65px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Purity</th>
-                        <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "90px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Wastage (g)</th>
-                        <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "85px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Weight (g)</th>
-                        <th style={{ padding: "6px 4px", borderRight: "1px solid black", width: "75px", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Rate/g</th>
-                        <th style={{ padding: "6px 8px", width: "95px", textAlign: "right", fontFamily: "Georgia, serif", color: "white", backgroundColor: "#0b5c33" }}>Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...billOldGoldItems.map(x => ({ ...x, metal: "GOLD" })), ...billOldSilverItems.map(x => ({ ...x, metal: "SILVER" }))].map((item, index) => {
-                        let itemName = "Old Gold/Silver Item";
-                        let purity = "";
-                        let rate = 0;
-                        let wastage = 0;
-                        const exMatch = item.customer_name.match(/\[EXCHANGE:([^\]]+)\]/);
-                        if (exMatch) {
-                          const parts = exMatch[1].split("|");
-                          itemName = parts[0] || "";
-                          purity = parts[1] || "";
-                          rate = parseFloat(parts[2]) || 0;
-                          wastage = parseFloat(parts[3]) || 0;
-                        }
-                        return (
-                          <tr key={item.id || index} style={{ borderBottom: "1px solid rgba(0,0,0,0.15)", textAlign: "center", minHeight: "44px", color: "black", fontWeight: 600 }}>
-                            <td style={{ padding: "10px 4px", borderRight: "1px solid black", color: "rgba(0,0,0,0.45)" }}>{index + 1}</td>
-                            <td style={{ padding: "10px 8px", borderRight: "1px solid black", textAlign: "left", fontFamily: "Georgia, serif", fontWeight: 900, textTransform: "uppercase" }}>
-                              <div style={{ fontSize: "14px" }}>{itemName} ({item.metal})</div>
-                            </td>
-                            <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{purity || "—"}</td>
-                            <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{wastage > 0 ? `${wastage.toFixed(3)}g` : "—"}</td>
-                            <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{item.weight.toFixed(3)}</td>
-                            <td style={{ padding: "10px 4px", borderRight: "1px solid black", fontFamily: "sans-serif", fontWeight: 700 }}>{rate > 0 ? `₹${rate.toFixed(0)}` : "—"}</td>
-                            <td style={{ padding: "10px 8px", fontFamily: "sans-serif", fontWeight: 900, textAlign: "right", fontSize: "14px" }}>₹{item.amount.toFixed(2)}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Bottom Summary: Words + GST + Payment */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
-                {/* Left: Amount in words + payment mode */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                  <div style={{ border: "1px solid black", borderRadius: "6px", padding: "6px 8px", fontSize: "10px", lineHeight: 1.4 }}>
-                    <div style={{ fontSize: "8px", color: "rgba(0,0,0,0.5)", textTransform: "uppercase", fontFamily: "sans-serif", fontWeight: 700, marginBottom: "2px" }}>Rupees in Words:</div>
-                    <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 700, textTransform: "uppercase", fontSize: "10px" }}>{numberToWordsIndian(netPayableVal)}</div>
-                  </div>
-
-                  {/* Payment Mode & Invoice QR Box */}
-                  <div style={{ border: "1px solid black", borderRadius: "6px", padding: "6px 8px", fontSize: "10.5px", display: "grid", gridTemplateColumns: "1fr 90px", gap: "6px", alignItems: "center" }}>
-                    <div>
-                      <div style={{ fontSize: "8.5px", color: "rgba(0,0,0,0.5)", textTransform: "uppercase", fontFamily: "sans-serif", fontWeight: 700, marginBottom: "4px" }}>Payment Mode:</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "3px" }}>
-                        {billCashAmount > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "sans-serif", fontWeight: 700 }}>
-                            <span>💵 Cash</span><span style={{ fontFamily: "monospace" }}>₹{billCashAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {billUpiAmount > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "sans-serif", fontWeight: 700 }}>
-                            <span>📱 UPI / Online</span><span style={{ fontFamily: "monospace" }}>₹{billUpiAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {billOtherAmount > 0 && (
-                          <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "sans-serif", fontWeight: 700 }}>
-                            <span>🏦 Other</span><span style={{ fontFamily: "monospace" }}>₹{billOtherAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {(billCashAmount === 0 && billUpiAmount === 0 && billOtherAmount === 0) && (
-                          <div style={{ fontFamily: "sans-serif", fontWeight: 700, color: "#000000" }}>💵 Cash ₹{netPayableVal.toFixed(2)}</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Invoice QR Code Container */}
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderLeft: "1px solid rgba(0,0,0,0.15)", paddingLeft: "4px" }}>
-                      {qrCodeDataUrl ? (
-                        <img src={qrCodeDataUrl} alt="Invoice QR Code" style={{ width: "70px", height: "70px", objectFit: "contain", border: "1px solid rgba(0,0,0,0.15)", borderRadius: "4px", padding: "2px", background: "white" }} />
-                      ) : (
-                        <div style={{ width: "70px", height: "70px", border: "1px border-dashed text-center flex items-center justify-center font-mono text-[8px]" }}>QR CODE</div>
-                      )}
-                      <span style={{ fontSize: "7px", fontFamily: "sans-serif", fontWeight: 800, textTransform: "uppercase", color: "#0b5c33", marginTop: "2px" }}>Invoice QR</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: GST Summary Table */}
-                <div style={{ border: "1px solid black", borderRadius: "6px", overflow: "hidden", fontSize: "11px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 10px", borderBottom: "1px solid rgba(0,0,0,0.15)", background: "rgba(0,0,0,0.02)", fontFamily: "sans-serif", fontWeight: 700 }}>
-                    <span style={{ fontSize: "9px", textTransform: "uppercase", color: "rgba(0,0,0,0.55)" }}>Total Before GST</span>
-                    <span>₹{baseAmount.toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 10px", borderBottom: "1px solid rgba(0,0,0,0.1)", fontFamily: "sans-serif", fontWeight: 700, color: "rgba(0,0,0,0.7)" }}>
-                    <span style={{ fontSize: "9px", textTransform: "uppercase" }}>Add SGST 1.5%</span>
-                    <span>+ ₹{sgstVal.toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 10px", borderBottom: "1px solid rgba(0,0,0,0.1)", fontFamily: "sans-serif", fontWeight: 700, color: "rgba(0,0,0,0.7)" }}>
-                    <span style={{ fontSize: "9px", textTransform: "uppercase" }}>Add CGST 1.5%</span>
-                    <span>+ ₹{cgstVal.toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderBottom: "1px solid rgba(0,0,0,0.15)", fontFamily: "sans-serif", fontWeight: 700, color: "rgba(0,0,0,0.7)" }}>
-                    <span style={{ fontSize: "9px", textTransform: "uppercase" }}>Total After GST</span>
-                    <span>₹{totalVal.toFixed(2)}</span>
-                  </div>
-                  {oldExchangeTotal > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 10px", borderBottom: "1px solid rgba(0,0,0,0.15)", fontFamily: "sans-serif", fontWeight: 700, color: "green" }}>
-                      <span style={{ fontSize: "9px", textTransform: "uppercase" }}>Old Gold/Silver Exchange</span>
-                      <span>- ₹{oldExchangeTotal.toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderBottom: "1px solid rgba(0,0,0,0.15)", fontFamily: "sans-serif", fontWeight: 700, color: "rgba(0,0,0,0.7)" }}>
-                    <span style={{ fontSize: "9px", textTransform: "uppercase" }}>Amount Paid</span>
-                    <span>₹{(billCashAmount + billUpiAmount + billOtherAmount).toFixed(2)}</span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", borderBottom: "1px solid rgba(0,0,0,0.15)", fontFamily: "sans-serif", fontWeight: 700, color: "red" }}>
-                    <span style={{ fontSize: "9px", textTransform: "uppercase" }}>Due Amount</span>
-                    <span>₹{Math.max(0, netPayableVal - (billCashAmount + billUpiAmount + billOtherAmount)).toFixed(2)}</span>
-                  </div>
-                  <div className="final-amount-row" style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", background: "#0b5c33", backgroundColor: "#0b5c33", color: "white", fontFamily: "sans-serif", fontWeight: 900, fontSize: "12px" }}>
-                    <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "1px", color: "white" }}>Final Net Amount</span>
-                    <span style={{ color: "white" }}>₹{netPayableVal.toFixed(2)}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bill Footer & Signatures */}
-              <div style={{ borderTop: "1px solid rgba(0,0,0,0.4)", paddingTop: "6px", marginTop: "4px" }}>
-                {/* Terms & Conditions */}
-                <div style={{ marginBottom: "6px" }}>
-                  <h4 style={{ fontFamily: "Georgia, serif", fontWeight: 900, textTransform: "uppercase", fontSize: "8.5px", marginBottom: "4px" }}>Terms &amp; Conditions :</h4>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px", fontSize: "7px", color: "rgba(0,0,0,0.75)", fontFamily: "sans-serif", fontWeight: 600, lineHeight: 1.5 }}>
-                    <p style={{ margin: "1px 0" }}>1. Minimum 80% advance payment is required for all custom orders.</p>
-                    <p style={{ margin: "1px 0" }}>2. Exchange or return is accepted only within 10–12 days of purchase.</p>
-                    <p style={{ margin: "1px 0" }}>3. No guarantee or warranty is provided against breakage or damage after delivery.</p>
-                    <p style={{ margin: "1px 0" }}>4. Quality and purity of the jewellery are guaranteed as specified on the invoice.</p>
-                    <p style={{ margin: "1px 0" }}>5. Making charges, GST, and other applicable charges are non-refundable.</p>
-                    <p style={{ margin: "1px 0" }}>6. Exchange value based on prevailing gold rate and jewellery condition.</p>
-                    <p style={{ margin: "1px 0" }}>7. Please verify the weight, design, and invoice details before leaving the store.</p>
-                    <p style={{ margin: "1px 0" }}>8. This invoice is mandatory for any exchange, buyback, or service request.</p>
-                    <p style={{ margin: "1px 0" }}>9. Hallmarked jewellery complies with BIS standards wherever applicable.</p>
-                    <p style={{ margin: "1px 0" }}>10. All disputes are subject to the jurisdiction of the local courts only.</p>
-                  </div>
-                </div>
-
-                {/* Signatures */}
-                <div style={{ display: "grid", gridTemplateColumns: "7fr 5fr", borderTop: "1px solid rgba(0,0,0,0.15)", paddingTop: "4px" }}>
-                  <div />
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", textAlign: "center", fontSize: "9px", fontFamily: "sans-serif", fontWeight: 700, paddingTop: "28px" }}>
-                    <div style={{ borderTop: "1px solid black", paddingTop: "4px", color: "rgba(0,0,0,0.7)" }}>
-                      Customer Signature
-                      <div style={{ fontSize: "7px", color: "rgba(0,0,0,0.45)" }}>Buyer Sign</div>
-                    </div>
-                    <div style={{ position: "relative", textAlign: "center" }}>
-                      <div style={{ position: "absolute", top: "-16px", right: 0, fontFamily: "Georgia, serif", fontWeight: 900, fontSize: "7px", textTransform: "uppercase", letterSpacing: "0.5px" }}>FOR: POOJA JEWELLERS</div>
-                      <div style={{ borderTop: "1px solid black", paddingTop: "4px", color: "rgba(0,0,0,0.7)" }}>
-                        Auth. Signature
-                        <div style={{ fontSize: "7px", color: "rgba(0,0,0,0.45)" }}>Seller Sign</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      )}
-
       <TimeSyncModal
         isOpen={showTimeSyncModal}
         onClose={() => setShowTimeSyncModal(false)}
@@ -3402,7 +2029,7 @@ function DashboardView() {
 
 interface SettingsViewProps {
   currentDate: string;
-  onRefresh: (dateStr: string) => void;
+  onRefresh?: (dateStr: string) => void;
   showNotification: (msg: string, type: "success" | "info" | "error") => void;
 }
 
@@ -3432,14 +2059,7 @@ function SettingsView({ currentDate, onRefresh, showNotification }: SettingsView
     }
   };
 
-  const triggerManualSync = async () => {
-    setSyncing(true);
-    showNotification("Syncing with cloud…", "info");
-    const count = await syncOfflineQueue();
-    setSyncing(false);
-    showNotification(count > 0 ? `Synced ${count} offline records` : "All data up to date", "success");
-    if (currentDate) onRefresh(currentDate);
-  };
+
 
   const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -3447,7 +2067,7 @@ function SettingsView({ currentDate, onRefresh, showNotification }: SettingsView
     showNotification("Importing backup...", "info");
     const ok = await importBackup(file);
     showNotification(ok ? "Backup imported successfully!" : "Import failed. Invalid file format.", ok ? "success" : "error");
-    if (ok && currentDate) onRefresh(currentDate);
+    if (ok && currentDate) onRefresh?.(currentDate);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -3487,7 +2107,7 @@ function SettingsView({ currentDate, onRefresh, showNotification }: SettingsView
       const ok = await restoreDatabaseBackup(pw, file);
       if (ok) {
         showNotification("Database file restored successfully!", "success");
-        if (currentDate) onRefresh(currentDate);
+        if (currentDate) onRefresh?.(currentDate);
       } else {
         showNotification("Database restore failed. Make sure the file is a valid SQLite .db file.", "error");
       }
@@ -3548,33 +2168,7 @@ function SettingsView({ currentDate, onRefresh, showNotification }: SettingsView
           </div>
         </div>
 
-        {/* Database Synchronization */}
-        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-700">
-              <RefreshCw size={20} />
-            </div>
-            <div>
-              <h3 className="font-bold text-sm text-amber-955 font-serif">Sync Manager</h3>
-              <p className="text-[10px] text-amber-800/60 font-medium">Manually push any local offline records to the cloud database.</p>
-            </div>
-          </div>
 
-          <div className="border-t border-amber-50 pt-4">
-            <button
-              onClick={triggerManualSync}
-              disabled={syncing}
-              className="w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wide transition-all text-white flex items-center justify-center gap-2"
-              style={{
-                background: "linear-gradient(135deg,#c8960c,#D4AF37)",
-                boxShadow: "0 2px 8px rgba(212,175,55,0.3)",
-              }}
-            >
-              <RefreshCw size={14} className={syncing ? "animate-spin" : ""} />
-              {syncing ? "Syncing..." : "Sync Offline Queue Now"}
-            </button>
-          </div>
-        </div>
 
         {/* Interest & Grace Settings */}
         <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm space-y-4">

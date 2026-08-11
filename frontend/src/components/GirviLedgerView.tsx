@@ -93,8 +93,7 @@ const calculateRedemptionInterest = (
 
 interface GirviLedgerViewProps {
   currentDate: string;
-  daybookId: number;
-  onRefreshDaybook: () => void;
+  onRefreshDaybook?: () => void;
   onSelectPrintPledge: (pledge: PledgeEntry) => void;
   showNotification: (msg: string, type: "success" | "info" | "error") => void;
   onSwitchToForm: () => void;
@@ -102,7 +101,6 @@ interface GirviLedgerViewProps {
 
 export default function GirviLedgerView({
   currentDate,
-  daybookId,
   onRefreshDaybook,
   onSelectPrintPledge,
   showNotification,
@@ -356,7 +354,7 @@ export default function GirviLedgerView({
           localStorage.removeItem(`daybook_${targetDate}`);
         }
         loadPledges();
-        onRefreshDaybook();
+        onRefreshDaybook?.();
       } else {
         showNotification("Failed to save changes", "error");
       }
@@ -437,29 +435,27 @@ export default function GirviLedgerView({
       const bandaDate = bandaForm.date;
       const interestRec = parseFloat(bandaForm.interest_received) || 0;
       const method = bandaForm.method;
-      const prefix = method === "UPI" ? "[UPI] " : method === "OTHER" ? "[OTHER] " : "";
 
       if (interestRec <= 0) {
         showNotification("Please enter a valid interest amount", "error");
         return;
       }
 
-      // 1. Load or create daybook for banda date
-      const dbRes = await fetchDayBook(bandaDate);
-      const db = dbRes.data;
-
-      // 2. Create Credit entry (Aavak) in Daybook for Banda Interest
-      await addSubEntry(db.id, bandaDate, "credit", {
-        name: `Banda No. ${selectedPledge.pledge_no}`,
-        particulars: `${prefix}Girvi Banda interest`,
+      const res = await addPledgePayment(selectedPledge.id, {
+        payment_type: "INTEREST",
         amount: interestRec,
-        remarks: `Banda / Interest taken for Pawner ${selectedPledge.customer_name} (Pledge ${selectedPledge.pledge_no})`,
+        payment_method: method,
+        date: bandaDate,
       });
 
-      showNotification(`Banda interest of ₹${interestRec} for Pledge ${selectedPledge.pledge_no} recorded!`, "success");
-      setShowBandaModal(false);
-      setSelectedPledge(null);
-      onRefreshDaybook();
+      if (res) {
+        showNotification(`Banda interest of ₹${interestRec} for Pledge ${selectedPledge.pledge_no} recorded!`, "success");
+        setShowBandaModal(false);
+        setSelectedPledge(null);
+        loadPledges();
+      } else {
+        showNotification("Failed to record Banda interest", "error");
+      }
     } catch (err) {
       console.error(err);
       showNotification("Failed to record Banda interest", "error");
@@ -487,25 +483,8 @@ export default function GirviLedgerView({
       const releaseDate = releaseForm.release_date;
       const interestRec = parseFloat(releaseForm.interest_received) || 0;
       const method = releaseForm.method;
-      const isSplit = method === "SPLIT";
-      const isUpi = method === "UPI";
-      const isOther = method === "OTHER";
 
-      const cashAmt = parseFloat(releaseForm.splitCash || "0");
-      const upiAmt = parseFloat(releaseForm.splitUpi || "0");
-      const prefix = isSplit
-        ? `[SPLIT:C${cashAmt}:U${upiAmt}:A${releaseForm.splitUpiAccount}] `
-        : isUpi
-        ? "[UPI] "
-        : isOther
-        ? "[OTHER] "
-        : "";
-
-      // 1. Load or create daybook for release date
-      const dbRes = await fetchDayBook(releaseDate);
-      const db = dbRes.data;
-
-      // 2. Update Pledge status to RELEASED in database
+      // 1. Update Pledge status to RELEASED in database
       const ok = await updatePledgeEntry(
         selectedPledge.id,
         { status: "RELEASED", release_date: releaseDate },
@@ -514,19 +493,21 @@ export default function GirviLedgerView({
 
       if (!ok) throw new Error("Update status failed");
 
-      // 3. Create Release entry in Daybook (details page backside)
-      await addSubEntry(db.id, releaseDate, "release", {
-        customer_name: prefix + selectedPledge.pledge_no,
-        principal_amount: selectedPledge.amount,
-        interest_received: interestRec,
-      });
+      // 2. If interest received, record it as a payment
+      if (interestRec > 0) {
+        await addPledgePayment(selectedPledge.id, {
+          payment_type: "INTEREST",
+          amount: interestRec,
+          payment_method: method,
+          date: releaseDate,
+        });
+      }
 
       showNotification(`Pledge ${selectedPledge.pledge_no} released successfully!`, "success");
 
       setShowReleaseModal(false);
       setSelectedPledge(null);
       loadPledges();
-      onRefreshDaybook();
     } catch (err) {
       console.error(err);
       showNotification("Failed to release pledge", "error");
@@ -534,7 +515,7 @@ export default function GirviLedgerView({
   };
 
   const handleRevertRelease = async (pledge: PledgeEntry) => {
-    if (!confirm(`Are you sure you want to revert the release of Pledge ${pledge.pledge_no}? This will change its status back to ACTIVE and remove the release entry from the Day Book.`)) {
+    if (!confirm(`Are you sure you want to revert the release of Pledge ${pledge.pledge_no}? This will change its status back to ACTIVE.`)) {
       return;
     }
 
@@ -543,7 +524,6 @@ export default function GirviLedgerView({
       if (ok) {
         showNotification(`Pledge ${pledge.pledge_no} release reverted back to ACTIVE!`, "success");
         loadPledges();
-        onRefreshDaybook();
       } else {
         showNotification("Failed to revert pledge release", "error");
       }
@@ -595,7 +575,7 @@ export default function GirviLedgerView({
         }
         
         setPaymentForm(prev => ({ ...prev, amount: "" }));
-        onRefreshDaybook();
+        onRefreshDaybook?.();
       } else {
         showNotification("Failed to record payment", "error");
       }
@@ -623,7 +603,7 @@ export default function GirviLedgerView({
             setLedgerPledge(updatedPledge);
           }
         }
-        onRefreshDaybook();
+        onRefreshDaybook?.();
       } else {
         showNotification("Failed to delete payment", "error");
       }
@@ -641,7 +621,7 @@ export default function GirviLedgerView({
       if (res.ok) {
         showNotification(`Pledge ${pledge.pledge_no} deleted`, "success");
         loadPledges();
-        onRefreshDaybook();
+        onRefreshDaybook?.();
       } else {
         showNotification("Failed to delete from server", "error");
       }
