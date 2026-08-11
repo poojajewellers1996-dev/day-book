@@ -8,7 +8,16 @@ import {
   Plus, History, Check, DollarSign, ArrowDownRight, Trash2
 } from "lucide-react";
 import { PledgeEntry, fetchAllPledges, updatePledgeEntry, fetchDayBook, addSubEntry } from "../utils/api";
-import { UPI_ACCOUNTS } from "./DiaryPage";
+export const UPI_ACCOUNTS = [
+  { key: "hdfc_192", label: "HDFC Bank CA - 192" },
+  { key: "hdfc_od_7442", label: "HDFC OD - 7442" },
+  { key: "pooja_068", label: "Pooja Jewellers - 068" },
+  { key: "shankarlal_832", label: "Shankarlal - 832" },
+  { key: "vikash", label: "Vikash" },
+  { key: "vikram", label: "Vikram" },
+  { key: "deepak", label: "Deepak" },
+  { key: "kavitha", label: "Kavitha" }
+];
 
 const formatDateDMY = (dateStr: string | undefined) => {
   if (!dateStr) return "—";

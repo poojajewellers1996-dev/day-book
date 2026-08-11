@@ -585,183 +585,117 @@ def is_first_time_setup(db: Session = Depends(get_db)):
     return {"first_time": has_opening is None}
 @app.get("/api/dashboard/stats")
 def get_dashboard_stats(db: Session = Depends(get_db)):
-    # Get last 7 daybooks
-    recent = db.query(models.DayBook).order_by(models.DayBook.date.desc()).limit(7).all()
-    # Reverse to show chronologically
-    recent.reverse()
-    
-    # Calculate lifetime stats
-    from sqlalchemy import func
-    import re
-    total_days = db.query(func.count(models.DayBook.id)).scalar()
-    
-    # Gold and Silver sold
-    sold_items = db.query(models.SoldItem).all()
-    gold_sold = sum(item.weight for item in sold_items if "[GOLD]" in item.item_name)
-    silver_sold = sum(item.weight for item in sold_items if "[SILVER]" in item.item_name)
-    
-    # Pledges outstanding (Pledge entries that are NOT released)
-    total_pledged = db.query(func.sum(models.PledgeEntry.amount)).scalar() or 0.0
-    total_released = db.query(func.sum(models.ReleaseEntry.principal_amount)).scalar() or 0.0
-    outstanding_girvi = max(0.0, total_pledged - total_released)
-
-    # ─── CALCULATE STOCK WEIGHTS & VALUATION ───
-    try:
-        load_barcode_cache()
-    except Exception:
-        pass
-
-    # Build set of sold barcodes
-    sold_barcodes = set()
-    for item in sold_items:
-        if item.item_name:
-            match = re.search(r"\[BARCODE:([A-Za-z0-9]+)\]", item.item_name)
-            if match:
-                sold_barcodes.add(match.group(1).strip().upper())
-                
-    manual_sold = db.query(models.SoldExcelBarcode.barcode_no).all()
-    for (bc,) in manual_sold:
-        if bc:
-            sold_barcodes.add(bc.strip().upper())
-
-    # Excel stock weights (available only)
-    excel_gold_wt = 0.0
-    excel_silver_wt = 0.0
-    for bc, details in BARCODE_CACHE.items():
-        bc_upper = bc.strip().upper()
-        if bc_upper in sold_barcodes:
-            continue
-        wt = details.get("weight", 0.0)
-        metal = details.get("metal", "GOLD")
-        if metal == "GOLD":
-            excel_gold_wt += wt
-        elif metal == "SILVER":
-            excel_silver_wt += wt
-
-    # DB stock weights (available only)
-    db_gold_wt = 0.0
-    db_silver_wt = 0.0
-    db_items = db.query(models.PurchaseItem).all()
-    for pi in db_items:
-        bc_upper = pi.barcode_no.strip().upper()
-        is_sold = 1 if (pi.is_sold == 1 or bc_upper in sold_barcodes) else 0
-        if is_sold:
-            continue
-        wt = pi.weight or 0.0
-        metal = pi.metal or "GOLD"
-        if metal == "GOLD":
-            db_gold_wt += wt
-        elif metal == "SILVER":
-            db_silver_wt += wt
-
-    total_gold_stock = excel_gold_wt + db_gold_wt
-    total_silver_stock = excel_silver_wt + db_silver_wt
-
-    # Scrape or use cache live rate
-    def parse_rate(rate_str: str) -> float:
-        try:
-            return float(rate_str.replace(",", "").strip())
-        except Exception:
-            return 0.0
-
-    gold_rate_val = parse_rate(LIVE_RATES_CACHE.get("gold_22k", "0"))
-    if gold_rate_val <= 0:
-        gold_rate_val = 7200.0  # fallback: 22K gold rate
-        
-    silver_rate_val = parse_rate(LIVE_RATES_CACHE.get("silver", "0"))
-    if silver_rate_val <= 0:
-        silver_rate_val = 90000.0  # fallback per kg
-    silver_per_gram = silver_rate_val / 1000.0
-
-    stock_val_gold = total_gold_stock * gold_rate_val
-    stock_val_silver = total_silver_stock * silver_per_gram
-    total_stock_valuation = stock_val_gold + stock_val_silver
-
-    # ─── CALCULATE TOTAL SUPPLIER CREDIT DYNAMICALLY ───
-    registered_parties = db.query(models.PurchaseParty).all()
-    bill_suppliers = db.query(models.PurchaseBill.supplier_name).distinct().all()
-    
-    supplier_names = set(p.name.strip().lower() for p in registered_parties)
-    for (name,) in bill_suppliers:
-        if name and name.strip():
-            supplier_names.add(name.strip().lower())
-            
-    total_supplier_credit = 0.0
-    for name_lower in supplier_names:
-        # Sum bills
-        bills_sum = db.query(func.sum(models.PurchaseBill.invoice_total)).filter(
-            func.lower(models.PurchaseBill.supplier_name) == name_lower
-        ).scalar() or 0.0
-        
-        # Sum cash payments
-        debits_sum = db.query(func.sum(models.DebitEntry.amount)).filter(
-            func.lower(models.DebitEntry.name) == name_lower,
-            ~models.DebitEntry.particulars.like("%[RATE_CUT:%")
-        ).scalar() or 0.0
-        
-        # Get opening balance if registered
-        party_rec = next((p for p in registered_parties if p.name.strip().lower() == name_lower), None)
-        opening_cash = party_rec.opening_balance_cash if party_rec else 0.0
-        
-        outstanding_cash = opening_cash + bills_sum - debits_sum
-        total_supplier_credit += outstanding_cash
-
-    # ─── CALCULATE ACTIVE PLEDGE DISTRIBUTION ───
+    # 1. Fetch active and released pledges
     active_pledges = db.query(models.PledgeEntry).filter(models.PledgeEntry.status == "ACTIVE").all()
-    active_gold_val = 0.0
-    active_silver_val = 0.0
-    active_gold_wt = 0.0
-    active_silver_wt = 0.0
+    released_pledges = db.query(models.PledgeEntry).filter(models.PledgeEntry.status == "RELEASED").all()
+    
+    # 2. Outstanding Girvi
+    outstanding_girvi = sum(p.amount for p in active_pledges)
+    active_girvi_count = len(active_pledges)
+    
+    total_released_girvi_amount = sum(p.amount for p in released_pledges)
+    total_released_girvi_count = len(released_pledges)
+    
+    # 3. Bank Re-pledge
+    repledged_active = [p for p in active_pledges if p.is_repledged == 1]
+    total_repledged_amount = sum(p.repledged_amount or 0.0 for p in repledged_active)
+    total_repledged_count = len(repledged_active)
+    
+    # 4. Weight distribution
+    active_gold_wt_safe = 0.0
+    active_gold_wt_bank = 0.0
+    active_silver_wt_safe = 0.0
+    active_silver_wt_bank = 0.0
     
     for p in active_pledges:
+        # Check primary ornament
         is_silver_1 = any(x in (p.ornament or "").lower() for x in ["silver", "chandi", "sil"])
         w1 = p.net_weight or p.weight or 0.0
         w2 = p.net_weight_2 or 0.0
         w3 = p.net_weight_3 or 0.0
         
-        if is_silver_1:
-            active_silver_wt += w1
-            active_silver_val += p.amount
-        else:
-            active_gold_wt += w1
-            active_gold_val += p.amount
-            
-        if p.ornament_2:
-            is_silver_2 = any(x in p.ornament_2.lower() for x in ["silver", "chandi", "sil"])
-            if is_silver_2:
-                active_silver_wt += w2
+        # Determine target weights based on re-pledged state
+        if p.is_repledged == 1:
+            if is_silver_1:
+                active_silver_wt_bank += w1
             else:
-                active_gold_wt += w2
+                active_gold_wt_bank += w1
                 
-        if p.ornament_3:
-            is_silver_3 = any(x in p.ornament_3.lower() for x in ["silver", "chandi", "sil"])
-            if is_silver_3:
-                active_silver_wt += w3
+            if p.ornament_2:
+                is_silver_2 = any(x in p.ornament_2.lower() for x in ["silver", "chandi", "sil"])
+                if is_silver_2:
+                    active_silver_wt_bank += w2
+                else:
+                    active_gold_wt_bank += w2
+                    
+            if p.ornament_3:
+                is_silver_3 = any(x in p.ornament_3.lower() for x in ["silver", "chandi", "sil"])
+                if is_silver_3:
+                    active_silver_wt_bank += w3
+                else:
+                    active_gold_wt_bank += w3
+        else:
+            if is_silver_1:
+                active_silver_wt_safe += w1
             else:
-                active_gold_wt += w3
+                active_gold_wt_safe += w1
+                
+            if p.ornament_2:
+                is_silver_2 = any(x in p.ornament_2.lower() for x in ["silver", "chandi", "sil"])
+                if is_silver_2:
+                    active_silver_wt_safe += w2
+                else:
+                    active_gold_wt_safe += w2
+                    
+            if p.ornament_3:
+                is_silver_3 = any(x in p.ornament_3.lower() for x in ["silver", "chandi", "sil"])
+                if is_silver_3:
+                    active_silver_wt_safe += w3
+                else:
+                    active_gold_wt_safe += w3
 
+    # 5. Upcoming due pledges (due date is YYYY-MM-DD)
+    due_pledges = [p for p in active_pledges if p.due_date]
+    due_pledges.sort(key=lambda x: x.due_date)
+    
+    upcoming_due_pledges = []
+    for p in due_pledges[:10]:
+        upcoming_due_pledges.append({
+            "id": p.id,
+            "pledge_no": p.pledge_no,
+            "customer_name": p.customer_name,
+            "amount": p.amount,
+            "due_date": p.due_date,
+            "mobile": p.mobile,
+            "ornament": p.ornament,
+            "weight": p.weight
+        })
+        
+    # 6. Recent Logs
+    logs = db.query(models.SystemLog).order_by(models.SystemLog.id.desc()).limit(5).all()
+    recent_logs = []
+    for l in logs:
+        recent_logs.append({
+            "id": l.id,
+            "timestamp": l.timestamp,
+            "action": l.action,
+            "details": l.details,
+            "module": l.module
+        })
+        
     return {
-        "recent_days": [
-            {
-                "date": d.date,
-                "closing_cash": d.closing_cash,
-                "closing_upi": d.closing_upi,
-                "closing_other": d.closing_other,
-                "total": d.closing_cash + d.closing_upi + d.closing_other
-            } for d in recent
-        ],
-        "total_days": total_days,
-        "gold_sold": gold_sold,
-        "silver_sold": silver_sold,
         "outstanding_girvi": outstanding_girvi,
-        "total_gold_stock": total_gold_stock,
-        "total_silver_stock": total_silver_stock,
-        "total_stock_valuation": total_stock_valuation,
-        "total_supplier_credit": total_supplier_credit,
-        "active_gold_val": active_gold_val,
-        "active_silver_val": active_silver_val,
-        "active_gold_wt": active_gold_wt,
-        "active_silver_wt": active_silver_wt
+        "active_girvi_count": active_girvi_count,
+        "total_released_girvi_amount": total_released_girvi_amount,
+        "total_released_girvi_count": total_released_girvi_count,
+        "total_repledged_amount": total_repledged_amount,
+        "total_repledged_count": total_repledged_count,
+        "active_gold_wt_safe": active_gold_wt_safe,
+        "active_gold_wt_bank": active_gold_wt_bank,
+        "active_silver_wt_safe": active_silver_wt_safe,
+        "active_silver_wt_bank": active_silver_wt_bank,
+        "upcoming_due_pledges": upcoming_due_pledges,
+        "recent_logs": recent_logs
     }
 
 @app.get("/api/reports/range", response_model=List[schemas.DayBookResponse])

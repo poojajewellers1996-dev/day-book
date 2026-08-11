@@ -9,7 +9,7 @@ import {
   BookOpen, LayoutDashboard, Settings, LogOut,
   ChevronLeft, ChevronRight, Wallet, Coins, Smartphone,
   BarChart3, Menu, X, CloudOff, CloudCheck, Plus, ShoppingCart, Package,
-  Archive, FolderOpen, Users, History, Calculator, Landmark, ShieldCheck,
+  Archive, FolderOpen, Users, History, Calculator, Landmark, ShieldCheck, Layers,
 } from "lucide-react";
 import {
   DayBook, fetchDayBook, syncOfflineQueue, PledgeEntry, saveDayBookCash, SoldItem, fetchAllSoldItems,
@@ -18,21 +18,12 @@ import {
 import { exportBackup, importBackup } from "../utils/backup";
 import { exportToPDF } from "../utils/pdf";
 import { fetchInternetTime, getSyncedDate, getSyncedDateString, getIsInternetTimeSynced, checkSystemVsGoogleTime, TimeCheckResult } from "../utils/timeUtils";
-import DiaryPage from "../components/DiaryPage";
 import LuxuryLogin from "../components/LuxuryLogin";
 import OpeningSetupModal from "../components/OpeningSetupModal";
 import GirviLedgerView from "../components/GirviLedgerView";
 import PledgeFormView from "../components/PledgeFormView";
-import SalesLedgerView from "../components/SalesLedgerView";
-import SaleFormView from "../components/SaleFormView";
-import PurchaseBillView from "../components/PurchaseBillView";
-import PurchaseLedgerView from "../components/PurchaseLedgerView";
-import StockRegisterView from "../components/StockRegisterView";
-import PurchasePartyView from "../components/PurchasePartyView";
 import SystemLogsView from "../components/SystemLogsView";
-import BankLedgerView from "../components/BankLedgerView";
 import BankRePledgeLedgerView from "../components/BankRePledgeLedgerView";
-import AavakJaavakView from "../components/AavakJaavakView";
 import BackupAuditView from "../components/BackupAuditView";
 import TimeSyncModal from "../components/TimeSyncModal";
 import SystemTimeAlertModal from "../components/SystemTimeAlertModal";
@@ -75,24 +66,13 @@ const getPledgeDateFromDueDate = (dueDateStr: string | undefined): string => {
 
 // ─── Sidebar nav items ──────────────────────────────────────────────────────
 const NAV = [
-  { id: "daybook", icon: BookOpen, label: "Day Book", active: true },
-  { id: "aavak_jaavak", icon: TrendingUp, label: "Given & Taken", active: false },
-  { id: "bank_ledger", icon: Wallet, label: "Bank Ledger", active: false },
-  { id: "bank_repledge", icon: Landmark, label: "Bank Re-Pledge", active: false },
-
+  { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", active: true },
   { id: "pledge_form", icon: Plus, label: "Girvi Form", active: false },
-  { id: "pledges", icon: Coins, label: "Girvi Ledger", active: false },
   { id: "existing_girvi", icon: Plus, label: "Existing Girvi", active: false },
-  { id: "sale_form", icon: ShoppingCart, label: "Sale Form", active: false },
-  { id: "sales", icon: TrendingUp, label: "Sales Ledger", active: false },
-  { id: "purchase_bill", icon: Package, label: "Purchase Bill", active: false },
-  { id: "purchase_ledger", icon: FolderOpen, label: "Purchase Ledger", active: false },
-  { id: "purchase_parties", icon: Users, label: "Purchase Party", active: false },
-  { id: "stock_register", icon: Archive, label: "Stock Register", active: false },
+  { id: "pledges", icon: Coins, label: "Girvi Ledger", active: false },
+  { id: "bank_repledge", icon: Landmark, label: "Bank Re-Pledge", active: false },
   { id: "backup_audit", icon: ShieldCheck, label: "Data & Backups", active: false },
   { id: "system_logs", icon: History, label: "System Logs", active: false },
-  { id: "dashboard", icon: LayoutDashboard, label: "Dashboard", active: false },
-  { id: "reports", icon: BarChart3, label: "Reports", active: false },
   { id: "settings", icon: Settings, label: "Settings", active: false },
 ];
 
@@ -440,8 +420,8 @@ export default function Dashboard() {
 
   const getNavFromPath = (path: string) => {
     const clean = path.replace(/^\//, "");
-    if (!clean) return "daybook";
-    return NAV.some(item => item.id === clean) ? clean : "daybook";
+    if (!clean) return "dashboard";
+    return NAV.some(item => item.id === clean) ? clean : "dashboard";
   };
 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -458,7 +438,7 @@ export default function Dashboard() {
         return clean;
       }
     }
-    return "daybook";
+    return "dashboard";
   });
   const [currentTime, setCurrentTime] = useState(() => getSyncedDate());
 
@@ -1160,7 +1140,7 @@ export default function Dashboard() {
         </div>
 
         {/* Centre: Date navigator (Desktop only) */}
-        {["daybook", "pledges", "pledge_form", "existing_girvi", "sale_form"].includes(activeNav) && (
+        {["pledges", "pledge_form", "existing_girvi"].includes(activeNav) && (
           <div
             className="hidden md:flex h-9 items-center gap-1 px-3 rounded-xl"
             style={{ background: "#FFF9F0", border: "1px solid rgba(212,175,55,0.25)" }}
@@ -1264,7 +1244,7 @@ export default function Dashboard() {
           </button>
 
           {/* Action buttons (Desktop only) */}
-          {["daybook", "pledges", "pledge_form", "existing_girvi", "sales", "sale_form"].includes(activeNav) && (
+          {["pledges", "pledge_form", "existing_girvi"].includes(activeNav) && (
             <>
               <button
                 onClick={triggerPDFExport}
@@ -1507,7 +1487,7 @@ export default function Dashboard() {
 
           <div className="main-content px-4 py-6">
             {/* Mobile Date Navigator */}
-            {["daybook", "pledges", "pledge_form", "existing_girvi", "sale_form"].includes(activeNav) && (
+            {["pledges", "pledge_form", "existing_girvi"].includes(activeNav) && (
               <div className="md:hidden flex items-center justify-between mb-5 p-2 bg-white rounded-2xl border border-amber-250/20 shadow-xs">
                 <button
                   onClick={() => changeDate(-1)}
@@ -1536,64 +1516,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {activeNav === "daybook" && (
-              <>
-                {/* ── STAT CARDS ── */}
-                {daybook && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6 print-hidden">
-                    <StatCard
-                      label="Opening" value={fmt(openingTotal)}
-                      icon={Wallet} color="#8B6914"
-                      sub={`Cash ${fmt(openingCash)}`}
-                    />
-                    <StatCard
-                      label="Given (Debit)" value={fmt(debitTotal)}
-                      icon={ArrowRight} color="#dc2626"
-                      sub={`Cash ${fmt(debitCash)}`}
-                    />
-                    <StatCard
-                      label="Received" value={fmt(creditTotal)}
-                      icon={ArrowLeft} color="#16a34a"
-                      sub={`Cash ${fmt(creditCash)}`}
-                    />
-                    <StatCard
-                      label="Closing" value={fmt(closingTotal)}
-                      icon={TrendingUp} color="#D4AF37"
-                      sub={`Cash ${fmt(closingCash)}`}
-                    />
-                    <StatCard
-                      label="UPI Balance" value={fmt(closingUpi)}
-                      icon={Smartphone} color="#6366f1"
-                      sub={`In: ${fmt(totalUPIRec)}`}
-                    />
-                    <StatCard
-                      label="Gold Sold" value={`${goldSold.toFixed(3)}g`}
-                      icon={Coins} color="#f59e0b"
-                      sub={`Silver: ${silverSold.toFixed(3)}g`}
-                    />
-                  </div>
-                )}
-
-                {/* ── DAY BOOK ── */}
-                {daybook ? (
-                  <DiaryPage
-                    daybook={daybook}
-                    dateStr={currentDate}
-                    onRefresh={() => loadDayBookData(currentDate)}
-                    isSynced={isSynced}
-                    onEditOpening={() => setShowPasswordPrompt(true)}
-                    onSelectPrintPledge={(p) => setSelectedPrintPledge(p)}
-                    onSelectPrintBill={(item) => setSelectedPrintBill(item)}
-                    showNotification={showNotification}
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-24" style={{ color: "#C8A87A" }}>
-                    <RefreshCw className="animate-spin mb-4" size={36} />
-                    <p className="font-serif text-base font-semibold">Opening Potha Bahi…</p>
-                  </div>
-                )}
-              </>
-            )}
             {activeNav === "pledge_form" && (
               <PledgeFormView
                 currentDate={currentDate}
@@ -1617,42 +1539,6 @@ export default function Dashboard() {
                 showNotification={showNotification}
               />
             )}
-            {activeNav === "sale_form" && (
-              <SaleFormView
-                currentDate={currentDate}
-                onSuccess={(soldItem, shouldPrint = true) => {
-                  setSelectedPrintBill(soldItem);
-                  setActiveNav("sales");
-                  if (shouldPrint) {
-                    setTimeout(() => {
-                      window.print();
-                    }, 400);
-                  }
-                }}
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "purchase_bill" && (
-              <PurchaseBillView
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "purchase_ledger" && (
-              <PurchaseLedgerView
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "purchase_parties" && (
-              <PurchasePartyView
-                currentDate={currentDate}
-                showNotification={showNotification}
-              />
-            )}
-            {activeNav === "stock_register" && (
-              <StockRegisterView
-                showNotification={showNotification}
-              />
-            )}
             {activeNav === "backup_audit" && (
               <BackupAuditView
                 showNotification={showNotification}
@@ -1673,23 +1559,6 @@ export default function Dashboard() {
                 onSwitchToForm={() => setActiveNav("pledge_form")}
               />
             )}
-
-            {activeNav === "sales" && (
-              <SalesLedgerView
-                onSelectPrintBill={(item) => setSelectedPrintBill(item)}
-                showNotification={showNotification}
-              />
-            )}
-
-            {activeNav === "aavak_jaavak" && (
-              <AavakJaavakView />
-            )}
-
-            {activeNav === "bank_ledger" && (
-              <BankLedgerView />
-            )}
-
-
             {activeNav === "bank_repledge" && (
               <BankRePledgeLedgerView
                 currentDate={currentDate}
@@ -1697,18 +1566,7 @@ export default function Dashboard() {
                 showNotification={showNotification}
               />
             )}
-
             {activeNav === "dashboard" && <DashboardView />}
-
-            {activeNav === "reports" && (
-              <ReportsView
-                onSelectDate={(date) => {
-                  setCurrentDate(date);
-                  setActiveNav("daybook");
-                }}
-              />
-            )}
-
             {activeNav === "settings" && (
               <SettingsView
                 currentDate={currentDate}
@@ -3201,30 +3059,34 @@ export default function Dashboard() {
   );
 }
 
-// ════════════════════════════════
-// SUB-VIEWS FOR OTHER NAV TABS
-// ════════════════════════════════
-
 interface DashboardStats {
-  recent_days: {
-    date: string;
-    closing_cash: number;
-    closing_upi: number;
-    closing_other: number;
-    total: number;
-  }[];
-  total_days: number;
-  gold_sold: number;
-  silver_sold: number;
   outstanding_girvi: number;
-  total_gold_stock?: number;
-  total_silver_stock?: number;
-  total_stock_valuation?: number;
-  total_supplier_credit?: number;
-  active_gold_val?: number;
-  active_silver_val?: number;
-  active_gold_wt?: number;
-  active_silver_wt?: number;
+  active_girvi_count: number;
+  total_released_girvi_amount: number;
+  total_released_girvi_count: number;
+  total_repledged_amount: number;
+  total_repledged_count: number;
+  active_gold_wt_safe: number;
+  active_gold_wt_bank: number;
+  active_silver_wt_safe: number;
+  active_silver_wt_bank: number;
+  upcoming_due_pledges: {
+    id: number;
+    pledge_no: string;
+    customer_name: string;
+    amount: number;
+    due_date: string;
+    mobile: string;
+    ornament: string;
+    weight: number;
+  }[];
+  recent_logs: {
+    id: number;
+    timestamp: string;
+    action: string;
+    details: string;
+    module: string;
+  }[];
 }
 
 function DashboardView() {
@@ -3244,6 +3106,26 @@ function DashboardView() {
       });
   }, []);
 
+  const handleWhatsAppNotification = (p: any) => {
+    const cleanPhone = p.mobile ? p.mobile.replace(/\D/g, "") : "";
+    if (!cleanPhone) {
+      alert("Customer mobile number not found!");
+      return;
+    }
+    const formattedPhone = cleanPhone.length === 10 ? `91${cleanPhone}` : cleanPhone;
+    const msg = `ॐ.
+प्रिय ग्राहक,
+आपका गिरवी खाता क्रमांक (Pledge No): *${p.pledge_no || "N/A"}* दिनांक *${formatDateDMY(p.due_date)}* को पूर्ण हो रहा है। कृपया दुकान पर आकर अपना ब्याज एवं मूलधन जमा करवाएं।
+निवेदक: पूजा ज्वेलर्स (9829562725)`;
+    const url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
+
+  const isOverdue = (dueDateStr: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    return dueDateStr < today;
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20" style={{ color: "#C8A87A" }}>
@@ -3262,629 +3144,258 @@ function DashboardView() {
     );
   }
 
-  const maxTotal = Math.max(...stats.recent_days.map(d => d.total), 1);
+  const safeGold = stats.active_gold_wt_safe || 0;
+  const bankGold = stats.active_gold_wt_bank || 0;
+  const totalGold = safeGold + bankGold || 1;
+  const goldSafePct = (safeGold / totalGold) * 100;
+
+  const safeSilver = stats.active_silver_wt_safe || 0;
+  const bankSilver = stats.active_silver_wt_bank || 0;
+  const totalSilver = safeSilver + bankSilver || 1;
+  const silverSafePct = (safeSilver / totalSilver) * 100;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-black font-serif" style={{ color: "#2D1B0E" }}>
-          Dashboard Overview
+          Girvi & Bank Dashboard
         </h2>
         <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#FFF9F0", border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}>
-          Live Stats
+          Live Monitor
         </span>
       </div>
 
-      {/* Stats Grid */}
+      {/* Main Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Days */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-200 text-amber-700">
-            <Calendar size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider">Days Tracked</p>
-            <p className="text-xl font-bold font-mono text-amber-950 mt-0.5">{stats.total_days} Days</p>
-          </div>
-        </div>
-
-        {/* Gold */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-200 text-yellow-600">
-            <Coins size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider">Total Gold Sold</p>
-            <p className="text-xl font-bold font-mono text-amber-950 mt-0.5">{stats.gold_sold.toFixed(3)}g</p>
-          </div>
-        </div>
-
-        {/* Silver */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-200 text-slate-400">
-            <Coins size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider">Total Silver Sold</p>
-            <p className="text-xl font-bold font-mono text-amber-950 mt-0.5">{(stats.silver_sold / 1000).toFixed(3)} kg</p>
-          </div>
-        </div>
-
         {/* Outstanding Girvi */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-200 text-amber-700">
-            <Wallet size={24} />
+        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-250/30 text-amber-700">
+            <Coins size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider">Outstanding Girvi</p>
+            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider">Active Girvi Loan</p>
             <p className="text-xl font-bold font-mono text-amber-950 mt-0.5">{fmt(stats.outstanding_girvi)}</p>
+            <p className="text-[10px] text-amber-600 font-bold mt-0.5">{stats.active_girvi_count} Active Pledges</p>
           </div>
         </div>
-      </div>
 
-      {/* Stock Valuation & Liabilities Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Gold in Stock */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-200 text-yellow-600">
-            <Coins size={24} />
+        {/* Bank Re-pledge */}
+        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-indigo-50 border border-indigo-150 text-indigo-750">
+            <Landmark size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider">Gold in Stock</p>
-            <p className="text-xl font-bold font-mono text-amber-955 mt-0.5">{(stats.total_gold_stock || 0).toFixed(3)}g</p>
+            <p className="text-xs font-semibold text-indigo-850/60 uppercase tracking-wider">Bank Re-Pledge Loan</p>
+            <p className="text-xl font-bold font-mono text-indigo-950 mt-0.5">{fmt(stats.total_repledged_amount)}</p>
+            <p className="text-[10px] text-indigo-600 font-bold mt-0.5">{stats.total_repledged_count} Pledges Re-pledged</p>
           </div>
         </div>
 
-        {/* Silver in Stock */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-amber-50 border border-amber-200 text-slate-400">
-            <Coins size={24} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold text-amber-800/60 uppercase tracking-wider">Silver in Stock</p>
-            <p className="text-xl font-bold font-mono text-amber-955 mt-0.5">{((stats.total_silver_stock || 0) / 1000).toFixed(3)} kg</p>
-          </div>
-        </div>
-
-        {/* Current Valuation */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
+        {/* Released Girvi */}
+        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
           <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-emerald-50 border border-emerald-200 text-emerald-700">
-            <Coins size={24} />
+            <CheckCircle2 size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider">Inventory Valuation</p>
-            <p className="text-xl font-bold font-mono text-emerald-955 mt-0.5">{fmt(stats.total_stock_valuation || 0)}</p>
+            <p className="text-xs font-semibold text-emerald-800/60 uppercase tracking-wider">Released Principal</p>
+            <p className="text-xl font-bold font-mono text-emerald-955 mt-0.5">{fmt(stats.total_released_girvi_amount)}</p>
+            <p className="text-[10px] text-emerald-600 font-bold mt-0.5">{stats.total_released_girvi_count} Released Loans</p>
           </div>
         </div>
 
-        {/* Supplier Liabilities */}
-        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-red-50 border border-red-200 text-red-650">
-            <Wallet size={24} />
+        {/* Total Custody Weight */}
+        <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-50 border border-slate-200 text-slate-650">
+            <Layers size={24} />
           </div>
           <div>
-            <p className="text-xs font-semibold text-red-800/60 uppercase tracking-wider">Supplier Liabilities</p>
-            <p className="text-xl font-bold font-mono text-red-955 mt-0.5">{fmt(stats.total_supplier_credit || 0)}</p>
+            <p className="text-xs font-semibold text-slate-800/60 uppercase tracking-wider">Total Active Gold Wt</p>
+            <p className="text-xl font-bold font-mono text-slate-900 mt-0.5">{(safeGold + bankGold).toFixed(2)} g</p>
+            <p className="text-[10px] text-slate-650 font-bold mt-0.5">Silver: {((safeSilver + bankSilver) / 1000).toFixed(2)} kg</p>
           </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Closing Balance Trends (7 cols) */}
-        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-6 flex flex-col justify-between">
-          <div>
-            <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
-              Closing Balance Trends (Last 7 Days)
-            </h3>
-            <p className="text-[10px] text-amber-800/60 font-medium mb-6">Historical trends of total assets in cash, UPI, and other accounts.</p>
-          </div>
-
-          {stats.recent_days.length === 0 ? (
-            <p className="text-xs text-center py-10" style={{ color: "#9E8B78" }}>No data to display. Start creating daily sheets.</p>
-          ) : (
-            <div>
-              {/* Visual Bars */}
-              <div className="flex items-end justify-between gap-2 h-48 border-b border-amber-100 pb-2 overflow-x-auto sm:overflow-x-visible">
-                {stats.recent_days.map((day) => {
-                  const totalVal = day.total || 1;
-                  const heightCash = (day.closing_cash / totalVal) * 100;
-                  const heightUpi = (day.closing_upi / totalVal) * 100;
-                  const heightOther = (day.closing_other / totalVal) * 100;
-
-                  return (
-                    <div key={day.date} className="flex-1 flex flex-col items-center min-w-[50px] group relative">
-                      {/* Tooltip */}
-                      <div className="absolute bottom-full mb-2 bg-amber-955 text-white text-[10px] rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg min-w-[120px]">
-                        <p className="font-bold border-b border-white/20 pb-0.5 mb-1 text-center">{fmtDateFriendly(day.date)}</p>
-                        <p className="flex justify-between"><span>Cash:</span> <span>{fmt(day.closing_cash)}</span></p>
-                        <p className="flex justify-between"><span>UPI:</span> <span>{fmt(day.closing_upi)}</span></p>
-                        <p className="flex justify-between"><span>Other:</span> <span>{fmt(day.closing_other)}</span></p>
-                        <p className="flex justify-between border-t border-white/20 pt-0.5 mt-1 font-bold"><span>Total:</span> <span>{fmt(day.total)}</span></p>
-                      </div>
-
-                      {/* Visual stacked bar */}
-                      <div className="w-8 sm:w-10 flex flex-col justify-end rounded-t-md overflow-hidden" style={{ height: `${(day.total / maxTotal) * 150}px`, minHeight: 4 }}>
-                        <div className="bg-amber-600 transition-all hover:brightness-110" style={{ height: `${heightOther}%`, width: '100%' }} />
-                        <div className="bg-indigo-500 transition-all hover:brightness-110" style={{ height: `${heightUpi}%`, width: '100%' }} />
-                        <div className="bg-amber-400 transition-all hover:brightness-110" style={{ height: `${heightCash}%`, width: '100%' }} />
-                      </div>
-
-                      <span className="text-[9px] font-bold text-amber-800 mt-2 font-mono whitespace-nowrap">
-                        {day.date.substring(5)}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Legend */}
-              <div className="flex flex-wrap gap-4 mt-4 justify-center text-[10px] font-bold uppercase tracking-wider text-amber-900/80">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded bg-amber-400" />
-                  <span>Cash</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded bg-indigo-500" />
-                  <span>UPI</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded bg-amber-600" />
-                  <span>Other</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Pledge Metal Valuation Gauge (3 cols) */}
-        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-3 flex flex-col justify-between text-center">
-          <div>
-            <h3 className="font-bold text-sm font-serif mb-1 text-left" style={{ color: "#2D1B0E" }}>
-              Pledge Valuation Distribution
-            </h3>
-            <p className="text-[10px] text-amber-800/60 font-medium mb-6 text-left">Proportion of Gold vs Silver in active pledges.</p>
-          </div>
-
-          {(() => {
-            const goldVal = stats.active_gold_val || 0;
-            const silverVal = stats.active_silver_val || 0;
-            const totalVal = goldVal + silverVal || 1;
-            const goldPct = (goldVal / totalVal) * 100;
-            const silverPct = (silverVal / totalVal) * 100;
-
-            const radius = 32;
-            const circ = 2 * Math.PI * radius; // ~201.06
-            const goldOffset = circ - (goldPct / 100) * circ;
-
-            return (
-              <div className="space-y-4">
-                <div className="relative flex items-center justify-center">
-                  <svg width="120" height="120" className="transform -rotate-90 select-none" viewBox="0 0 100 100">
-                    {/* Gray track for Silver */}
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#E2E8F0"
-                      strokeWidth="10"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#94A3B8"
-                      strokeWidth="10"
-                      strokeDasharray={`${circ}`}
-                      strokeDashoffset={`${circ - (silverPct / 100) * circ}`}
-                      strokeLinecap="round"
-                    />
-                    {/* Gold active stroke */}
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#D4AF37"
-                      strokeWidth="10"
-                      strokeDasharray={`${circ}`}
-                      strokeDashoffset={`${goldOffset}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-[8px] font-black text-amber-800/60 uppercase tracking-widest">Active</span>
-                    <span className="text-xs font-black font-mono text-amber-955">₹{(stats.outstanding_girvi / 1000).toFixed(0)}k</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-left pt-2">
-                  <div className="p-2 rounded-xl bg-amber-50/40 border border-amber-100/50">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-                      <span className="text-[9px] font-bold text-amber-850 uppercase">Gold Pledges</span>
-                    </div>
-                    <span className="font-extrabold font-mono text-[11px] text-amber-955">₹{goldVal.toLocaleString("en-IN")}</span>
-                    <span className="block text-[8px] font-bold text-amber-800/60 mt-0.5">{goldPct.toFixed(0)}% of total</span>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-slate-50/50 border border-slate-200/40">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-[#94A3B8]" />
-                      <span className="text-[9px] font-bold text-slate-700 uppercase">Silver Pledges</span>
-                    </div>
-                    <span className="font-extrabold font-mono text-[11px] text-slate-800">₹{silverVal.toLocaleString("en-IN")}</span>
-                    <span className="block text-[8px] font-bold text-slate-500 mt-0.5">{silverPct.toFixed(0)}% of total</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* Pledge Metal Weight Gauge (3 cols) */}
-        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-3 flex flex-col justify-between text-center">
-          <div>
-            <h3 className="font-bold text-sm font-serif mb-1 text-left" style={{ color: "#2D1B0E" }}>
-              Pledge Weight Distribution
-            </h3>
-            <p className="text-[10px] text-amber-800/60 font-medium mb-6 text-left">Proportion of Gold vs Silver by weight in active pledges.</p>
-          </div>
-
-          {(() => {
-            const goldWt = stats.active_gold_wt || 0;
-            const silverWt = stats.active_silver_wt || 0;
-            const totalWt = goldWt + silverWt || 1;
-            const goldPct = (goldWt / totalWt) * 100;
-            const silverPct = (silverWt / totalWt) * 100;
-
-            const radius = 32;
-            const circ = 2 * Math.PI * radius; // ~201.06
-            const goldOffset = circ - (goldPct / 100) * circ;
-
-            // Format total weight nicely (kg if >= 1000g, else g)
-            const totalWtStr = (goldWt + silverWt) >= 1000
-              ? `${((goldWt + silverWt) / 1000).toFixed(2)} kg`
-              : `${(goldWt + silverWt).toFixed(1)} g`;
-
-            return (
-              <div className="space-y-4">
-                <div className="relative flex items-center justify-center">
-                  <svg width="120" height="120" className="transform -rotate-90 select-none" viewBox="0 0 100 100">
-                    {/* Gray track for Silver */}
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#E2E8F0"
-                      strokeWidth="10"
-                    />
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#94A3B8"
-                      strokeWidth="10"
-                      strokeDasharray={`${circ}`}
-                      strokeDashoffset={`${circ - (silverPct / 100) * circ}`}
-                      strokeLinecap="round"
-                    />
-                    {/* Gold active stroke */}
-                    <circle
-                      cx="50"
-                      cy="50"
-                      r={radius}
-                      fill="transparent"
-                      stroke="#D4AF37"
-                      strokeWidth="10"
-                      strokeDasharray={`${circ}`}
-                      strokeDashoffset={`${goldOffset}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-[8px] font-black text-amber-800/60 uppercase tracking-widest">Total Wt</span>
-                    <span className="text-xs font-black font-mono text-amber-955">{totalWtStr}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-left pt-2">
-                  <div className="p-2 rounded-xl bg-amber-50/40 border border-amber-100/50">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-                      <span className="text-[9px] font-bold text-amber-850 uppercase">Gold Wt</span>
-                    </div>
-                    <span className="font-extrabold font-mono text-[11px] text-amber-955">{goldWt.toFixed(2)}g</span>
-                    <span className="block text-[8px] font-bold text-amber-800/60 mt-0.5">{goldPct.toFixed(0)}% of total</span>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-slate-50/50 border border-slate-200/40">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-[#94A3B8]" />
-                      <span className="text-[9px] font-bold text-slate-700 uppercase">Silver Wt</span>
-                    </div>
-                    <span className="font-extrabold font-mono text-[11px] text-slate-800">{(silverWt / 1000).toFixed(2)}kg</span>
-                    <span className="block text-[8px] font-bold text-slate-500 mt-0.5">{silverPct.toFixed(0)}% of total</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </div>
       </div>
 
-      {/* Charts Grid Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Comparative Cash vs UPI (6 cols) */}
-        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-6 flex flex-col justify-between">
+      {/* Custody Distribution Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Gold Custody */}
+        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm flex flex-col justify-between">
           <div>
             <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
-              Cash vs UPI Balance Comparison
+              Gold Custody Distribution
             </h3>
-            <p className="text-[10px] text-amber-800/60 font-medium mb-6">Daily comparative breakdown of store cash vs bank UPI reserves.</p>
-          </div>
-
-          {(() => {
-            const maxCashOrUpi = Math.max(...stats.recent_days.map(d => Math.max(d.closing_cash, d.closing_upi)), 1);
-
-            return (
-              <div>
-                <div className="flex items-end justify-between gap-3 h-44 border-b border-amber-100 pb-2">
-                  {stats.recent_days.map((day) => {
-                    const cashH = (day.closing_cash / maxCashOrUpi) * 120;
-                    const upiH = (day.closing_upi / maxCashOrUpi) * 120;
-
-                    return (
-                      <div key={day.date} className="flex-1 flex flex-col items-center group relative min-w-[50px]">
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full mb-2 bg-amber-955 text-white text-[9px] rounded-lg p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg min-w-[110px]">
-                          <p className="font-bold border-b border-white/20 pb-0.5 mb-1 text-center font-mono">{day.date}</p>
-                          <p className="flex justify-between text-yellow-400"><span>Cash:</span> <span>₹{Math.round(day.closing_cash).toLocaleString("en-IN")}</span></p>
-                          <p className="flex justify-between text-indigo-300"><span>UPI:</span> <span>₹{Math.round(day.closing_upi).toLocaleString("en-IN")}</span></p>
-                        </div>
-
-                        {/* Comparative double bars */}
-                        <div className="flex items-end gap-1">
-                          <div className="w-3.5 bg-amber-400 hover:brightness-105 rounded-t" style={{ height: `${cashH}px`, minHeight: 2 }} />
-                          <div className="w-3.5 bg-indigo-500 hover:brightness-105 rounded-t" style={{ height: `${upiH}px`, minHeight: 2 }} />
-                        </div>
-
-                        <span className="text-[9px] font-bold text-amber-800 mt-2 font-mono">
-                          {day.date.substring(5)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="flex justify-center gap-4 mt-3 text-[10px] font-bold uppercase tracking-wider">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2.5 h-2.5 rounded bg-amber-400" />
-                    <span className="text-amber-850">Cash Balance</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-2.5 h-2.5 rounded bg-indigo-500" />
-                    <span className="text-amber-850">UPI Reserve</span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* Outstanding Pawn Weight (6 cols) */}
-        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-6 flex flex-col justify-between text-left">
-          <div>
-            <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
-              Active Pawned Metal Inventory
-            </h3>
-            <p className="text-[10px] text-amber-800/60 font-medium mb-6">Total weight of active gold and silver ornaments held in physical safe custody.</p>
+            <p className="text-[10px] text-amber-800/60 font-medium mb-6">Physical safe custody (shop) vs bank re-pledged custody.</p>
           </div>
 
           <div className="space-y-4 pt-2">
-            {/* Gold Weight Row */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-bold text-amber-955">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-                  <span>Gold Ornaments Weight</span>
-                </div>
-                <span className="font-mono">{(stats.active_gold_wt || 0).toFixed(3)} g</span>
-              </div>
-              <div className="w-full bg-amber-100/30 border border-amber-150/20 h-3 rounded-full overflow-hidden">
-                <div
-                  className="bg-[#D4AF37] h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(((stats.active_gold_wt || 0) / 1000) * 100, 100)}%` }}
-                />
-              </div>
-              <span className="block text-[8px] text-amber-800/50 font-bold uppercase tracking-wider">Estimated capacity percentage (max threshold: 1 kg)</span>
+            <div className="flex justify-between text-xs font-bold text-amber-955">
+              <span>Safe Custody (Shop)</span>
+              <span className="font-mono">{safeGold.toFixed(2)} g ({goldSafePct.toFixed(1)}%)</span>
+            </div>
+            <div className="w-full bg-amber-50 h-3 rounded-full overflow-hidden border border-amber-200/30">
+              <div
+                className="bg-[#D4AF37] h-full rounded-full transition-all duration-500"
+                style={{ width: `${goldSafePct}%` }}
+              />
             </div>
 
-            {/* Silver Weight Row */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-xs font-bold text-slate-800">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full bg-[#94A3B8]" />
-                  <span>Silver Ornaments Weight</span>
-                </div>
-                <span className="font-mono">{((stats.active_silver_wt || 0) / 1000).toFixed(3)} kg</span>
-              </div>
-              <div className="w-full bg-slate-100/50 border border-slate-200/40 h-3 rounded-full overflow-hidden">
-                <div
-                  className="bg-[#94A3B8] h-full rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(((stats.active_silver_wt || 0) / 15000) * 100, 100)}%` }}
-                />
-              </div>
-              <span className="block text-[8px] text-slate-400 font-bold uppercase tracking-wider">Estimated capacity percentage (max threshold: 15 kg)</span>
+            <div className="flex justify-between text-xs font-bold text-indigo-750">
+              <span>Bank Custody</span>
+              <span className="font-mono">{bankGold.toFixed(2)} g ({(100 - goldSafePct).toFixed(1)}%)</span>
             </div>
+            <div className="w-full bg-indigo-50 h-3 rounded-full overflow-hidden border border-indigo-150">
+              <div
+                className="bg-indigo-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${100 - goldSafePct}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between border-t border-amber-50 pt-4 mt-6 text-xs text-amber-900/80 font-bold">
+            <span>Total Active Gold Weight</span>
+            <span className="font-mono">{(safeGold + bankGold).toFixed(2)} g</span>
+          </div>
+        </div>
+
+        {/* Silver Custody */}
+        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm flex flex-col justify-between">
+          <div>
+            <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
+              Silver Custody Distribution
+            </h3>
+            <p className="text-[10px] text-amber-800/60 font-medium mb-6">Physical safe custody (shop) vs bank re-pledged custody.</p>
+          </div>
+
+          <div className="space-y-4 pt-2">
+            <div className="flex justify-between text-xs font-bold text-amber-955">
+              <span>Safe Custody (Shop)</span>
+              <span className="font-mono">{(safeSilver / 1000).toFixed(2)} kg ({silverSafePct.toFixed(1)}%)</span>
+            </div>
+            <div className="w-full bg-amber-50 h-3 rounded-full overflow-hidden border border-amber-200/30">
+              <div
+                className="bg-slate-400 h-full rounded-full transition-all duration-500"
+                style={{ width: `${silverSafePct}%` }}
+              />
+            </div>
+
+            <div className="flex justify-between text-xs font-bold text-indigo-750">
+              <span>Bank Custody</span>
+              <span className="font-mono">{(bankSilver / 1000).toFixed(2)} kg ({(100 - silverSafePct).toFixed(1)}%)</span>
+            </div>
+            <div className="w-full bg-indigo-50 h-3 rounded-full overflow-hidden border border-indigo-150">
+              <div
+                className="bg-indigo-500 h-full rounded-full transition-all duration-500"
+                style={{ width: `${100 - silverSafePct}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-between border-t border-amber-50 pt-4 mt-6 text-xs text-amber-900/80 font-bold">
+            <span>Total Active Silver Weight</span>
+            <span className="font-mono">{((safeSilver + bankSilver) / 1000).toFixed(2)} kg</span>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
 
-interface ReportsViewProps {
-  onSelectDate: (dateStr: string) => void;
-}
+      {/* Row 2: Upcoming Due Dates & Recent Audits */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Upcoming Due Pledges (7 cols) */}
+        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-7 flex flex-col justify-between">
+          <div>
+            <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
+              Pledges Nearing Due Date (12-Month Limit)
+            </h3>
+            <p className="text-[10px] text-amber-800/60 font-medium mb-4">Immediate attention required: pledges expiring soon or overdue.</p>
+          </div>
 
-function ReportsView({ onSelectDate }: ReportsViewProps) {
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [daybooks, setDaybooks] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [searched, setSearched] = useState(false);
-
-  useEffect(() => {
-    // Set default range to last 30 days
-    const end = new Date();
-    const start = new Date();
-    start.setDate(start.getDate() - 30);
-    setStartDate(start.toISOString().split("T")[0]);
-    setEndDate(end.toISOString().split("T")[0]);
-  }, []);
-
-  const handleSearch = async () => {
-    if (!startDate || !endDate) return;
-    setSearching(true);
-    setSearched(true);
-    try {
-      const res = await fetch(`${API_BASE}/reports/range?start_date=${startDate}&end_date=${endDate}`);
-      if (res.ok) {
-        const data = await res.json();
-        setDaybooks(data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const totalOpening = daybooks[0] ? (daybooks[0].opening_cash + daybooks[0].opening_upi + daybooks[0].opening_other) : 0;
-  const totalClosing = daybooks[daybooks.length - 1] ? (daybooks[daybooks.length - 1].closing_cash + daybooks[daybooks.length - 1].closing_upi + daybooks[daybooks.length - 1].closing_other) : 0;
-
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-black font-serif" style={{ color: "#2D1B0E" }}>
-          Range Reports
-        </h2>
-        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#FFF9F0", border: "1px solid rgba(212,175,55,0.25)", color: "#8B6914" }}>
-          Audit Ledger
-        </span>
-      </div>
-
-      {/* Date Filter Box */}
-      <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-sm flex flex-col md:flex-row items-end gap-4">
-        <div className="flex-1 space-y-1.5 w-full">
-          <label className="text-xs font-semibold text-amber-800">From Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={e => setStartDate(e.target.value)}
-            className="w-full px-4 py-2 rounded-xl border border-amber-200 outline-none text-sm focus:border-amber-500 font-medium"
-            style={{ background: "#FFFBF5" }}
-          />
-        </div>
-        <div className="flex-1 space-y-1.5 w-full">
-          <label className="text-xs font-semibold text-amber-800">To Date</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={e => setEndDate(e.target.value)}
-            className="w-full px-4 py-2 rounded-xl border border-amber-200 outline-none text-sm focus:border-amber-500 font-medium"
-            style={{ background: "#FFFBF5" }}
-          />
-        </div>
-        <button
-          onClick={handleSearch}
-          disabled={searching}
-          className="w-full md:w-auto px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-wide transition-all text-white flex items-center justify-center gap-2"
-          style={{
-            background: "linear-gradient(135deg,#c8960c,#D4AF37)",
-            boxShadow: "0 2px 8px rgba(212,175,55,0.3)",
-          }}
-        >
-          {searching ? <RefreshCw className="animate-spin" size={14} /> : <FileText size={14} />}
-          Get Report
-        </button>
-      </div>
-
-      {/* Report results */}
-      {searched && (
-        <div className="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden">
-          {daybooks.length === 0 ? (
-            <div className="text-center py-12 text-amber-800/60 font-serif">
-              No daybook entries found in this date range.
-            </div>
-          ) : (
-            <div className="p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-amber-50 pb-4 mb-6">
-                <div>
-                  <h3 className="font-bold text-sm font-serif text-amber-950">Summary For Selected Range</h3>
-                  <p className="text-[10px] text-amber-800/65 font-medium mt-0.5">
-                    {fmtDateFriendly(startDate)} to {fmtDateFriendly(endDate)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-[10px] font-semibold text-amber-800/60 uppercase">Period Start Bal</p>
-                    <p className="text-sm font-bold text-amber-950 font-mono">{fmt(totalOpening)}</p>
-                  </div>
-                  <div className="w-[1px] h-8 bg-amber-100" />
-                  <div className="text-right">
-                    <p className="text-[10px] font-semibold text-amber-800/60 uppercase">Period End Bal</p>
-                    <p className="text-sm font-bold text-amber-950 font-mono">{fmt(totalClosing)}</p>
-                  </div>
-                </div>
+          <div className="overflow-x-auto flex-1 min-h-[220px]">
+            {stats.upcoming_due_pledges.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-48 text-amber-800/50">
+                <CheckCircle2 size={36} className="text-emerald-500 mb-2" />
+                <p className="text-xs font-semibold">No pledges nearing their due date.</p>
               </div>
-
-              {/* Table list */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="border-b border-amber-100" style={{ color: "#8B6914" }}>
-                      <th className="py-3 px-2 font-bold font-serif">Date</th>
-                      <th className="py-3 px-2 font-bold font-serif text-right">Opening Cash</th>
-                      <th className="py-3 px-2 font-bold font-serif text-right">Opening UPI</th>
-                      <th className="py-3 px-2 font-bold font-serif text-right">Closing Cash</th>
-                      <th className="py-3 px-2 font-bold font-serif text-right">Closing UPI</th>
-                      <th className="py-3 px-2 font-bold font-serif text-right">Closing Total</th>
-                      <th className="py-3 px-2 font-bold font-serif text-center">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {daybooks.map((db) => {
-                      const totalCloseVal = db.closing_cash + db.closing_upi + db.closing_other;
-                      return (
-                        <tr key={db.id} className="border-b border-amber-50 hover:bg-amber-50/20 transition-colors">
-                          <td className="py-3 px-2 font-bold text-amber-950 font-mono">{db.date}</td>
-                          <td className="py-3 px-2 text-right font-mono">{fmt(db.opening_cash)}</td>
-                          <td className="py-3 px-2 text-right font-mono text-indigo-600">{fmt(db.opening_upi)}</td>
-                          <td className="py-3 px-2 text-right font-mono font-bold text-amber-900">{fmt(db.closing_cash)}</td>
-                          <td className="py-3 px-2 text-right font-mono text-indigo-700 font-bold">{fmt(db.closing_upi)}</td>
-                          <td className="py-3 px-2 text-right font-mono font-black text-amber-950">{fmt(totalCloseVal)}</td>
-                          <td className="py-3 px-2 text-center">
-                            <button
-                              onClick={() => onSelectDate(db.date)}
-                              className="px-3 py-1 rounded-lg text-[10px] font-bold border border-amber-200 text-amber-800 hover:bg-amber-50 transition-colors"
-                            >
-                              Open Ledger
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+            ) : (
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="border-b border-amber-100 text-amber-800">
+                    <th className="py-2.5 px-1 font-bold">Pledge No</th>
+                    <th className="py-2.5 px-2 font-bold">Customer Name</th>
+                    <th className="py-2.5 px-2 font-bold text-right">Principal</th>
+                    <th className="py-2.5 px-2 font-bold text-center">Due Date</th>
+                    <th className="py-2.5 px-2 font-bold text-center">Status</th>
+                    <th className="py-2.5 px-1 font-bold text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.upcoming_due_pledges.map((p) => {
+                    const overdue = isOverdue(p.due_date);
+                    return (
+                      <tr key={p.id} className="border-b border-amber-50 hover:bg-amber-50/10">
+                        <td className="py-3 px-1 font-bold text-amber-955 font-mono">{p.pledge_no}</td>
+                        <td className="py-3 px-2 font-semibold text-amber-955 max-w-[120px] truncate" title={p.customer_name}>{p.customer_name}</td>
+                        <td className="py-3 px-2 font-bold font-mono text-right text-amber-900">{fmt(p.amount)}</td>
+                        <td className="py-3 px-2 font-semibold font-mono text-center text-amber-850">{formatDateDMY(p.due_date)}</td>
+                        <td className="py-3 px-2 text-center">
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${overdue ? "bg-red-50 text-red-650 border border-red-200" : "bg-amber-50 text-amber-700 border border-amber-200"}`}>
+                            {overdue ? "Overdue" : "Nearing"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-1 text-center">
+                          <button
+                            onClick={() => handleWhatsAppNotification(p)}
+                            title="Send WhatsApp Notification"
+                            className="p-1.5 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 active:scale-90 transition-all cursor-pointer"
+                          >
+                            💬
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* Recent System Audits (5 cols) */}
+        <div className="bg-white p-6 rounded-3xl border border-amber-100 shadow-sm lg:col-span-5 flex flex-col justify-between">
+          <div>
+            <h3 className="font-bold text-sm font-serif mb-1" style={{ color: "#2D1B0E" }}>
+              Recent System Audits
+            </h3>
+            <p className="text-[10px] text-amber-800/60 font-medium mb-4">Latest ledger modifications and system actions recorded.</p>
+          </div>
+
+          <div className="space-y-3 flex-1 overflow-y-auto max-h-[250px] pr-1">
+            {stats.recent_logs.length === 0 ? (
+              <p className="text-xs text-center py-12 text-amber-800/40">No audits logged yet.</p>
+            ) : (
+              stats.recent_logs.map((log) => {
+                let badgeColor = "bg-amber-50 text-amber-700 border border-amber-200";
+                if (log.action.includes("DELETE")) badgeColor = "bg-red-50 text-red-650 border border-red-200";
+                if (log.action.includes("CREATE")) badgeColor = "bg-emerald-50 text-emerald-700 border border-emerald-250";
+                
+                return (
+                  <div key={log.id} className="p-3 rounded-xl bg-amber-50/20 border border-amber-100/50 space-y-1.5 hover:shadow-xs transition-all">
+                    <div className="flex items-center justify-between">
+                      <span className={`px-2 py-0.5 rounded-md text-[8px] font-black tracking-wide uppercase ${badgeColor}`}>
+                        {log.action}
+                      </span>
+                      <span className="text-[9px] font-medium font-mono text-amber-800/50">
+                        {log.timestamp ? log.timestamp.split(" ")[1] || log.timestamp : ""}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-bold text-amber-955 leading-tight font-serif">
+                      {log.details}
+                    </p>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
