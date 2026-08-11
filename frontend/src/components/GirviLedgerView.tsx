@@ -158,10 +158,8 @@ export default function GirviLedgerView({
   const handleExportCSV = () => {
     const headers = [
       "Pledge No", "Date", "Customer Name", "Relation", "Relation Name", "Mobile", "Income", "Address", 
-      "Ornament 1", "Quantity 1", "Gross Weight 1 (g)", "Less Weight 1 (g)", "Net Weight 1 (g)", "Estimated Value 1 (₹)",
-      "Ornament 2", "Quantity 2", "Gross Weight 2 (g)", "Less Weight 2 (g)", "Net Weight 2 (g)", "Estimated Value 2 (₹)",
-      "Ornament 3", "Quantity 3", "Gross Weight 3 (g)", "Less Weight 3 (g)", "Net Weight 3 (g)", "Estimated Value 3 (₹)",
-      "Total Weight (g)", "Principal Amount (₹)", "Interest Rate (%)", "Interest Rate Text", "Redemption Period (Months)",
+      "Ornament", "Quantity", "Gross Weight (g)", "Less Weight (g)", "Net Weight (g)", "Estimated Value (₹)",
+      "Principal Amount (₹)", "Interest Rate (%)", "Interest Rate Text", "Redemption Period (Months)",
       "Interest Payment Frequency", "Due Date", "Status", "Release Date", "Is Repledged", "Repledged Bank",
       "Repledged Amount (₹)", "Repledged Date", "Repledged Name", "Repledged Receipt No", "Repledged Interest Rate"
     ];
@@ -183,19 +181,6 @@ export default function GirviLedgerView({
         p.less_weight || 0,
         p.net_weight || p.weight || 0,
         p.estimated_value || 0,
-        p.ornament_2 || "",
-        p.quantity_2 || 0,
-        p.gross_weight_2 || 0,
-        p.less_weight_2 || 0,
-        p.net_weight_2 || 0,
-        p.estimated_value_2 || 0,
-        p.ornament_3 || "",
-        p.quantity_3 || 0,
-        p.gross_weight_3 || 0,
-        p.less_weight_3 || 0,
-        p.net_weight_3 || 0,
-        p.estimated_value_3 || 0,
-        p.weight || 0,
         p.amount || 0,
         p.interest_percentage || 0,
         p.interest_rate_text || "",

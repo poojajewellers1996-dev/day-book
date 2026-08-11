@@ -1553,9 +1553,7 @@ export default function Dashboard() {
                           <tbody>
                             {(() => {
                               const rowsData = [
-                                { no: 1, ornament: p.ornament, gross: p.gross_weight || p.weight || 0, less: p.less_weight || 0, net: p.net_weight || p.weight || 0, val: p.estimated_value || 0 },
-                                { no: 2, ornament: p.ornament_2, gross: p.gross_weight_2 || 0, less: p.less_weight_2 || 0, net: p.net_weight_2 || 0, val: p.estimated_value_2 || 0 },
-                                { no: 3, ornament: p.ornament_3, gross: p.gross_weight_3 || 0, less: p.less_weight_3 || 0, net: p.net_weight_3 || 0, val: p.estimated_value_3 || 0 },
+                                { no: 1, ornament: p.ornament, gross: p.gross_weight || p.weight || 0, less: p.less_weight || 0, net: p.net_weight || p.weight || 0, val: p.estimated_value || 0 }
                               ];
 
                               return rowsData.map((row) => {
@@ -1595,7 +1593,7 @@ export default function Dashboard() {
                           Date: {formatDateDMY(pDate)}
                         </div>
                         <div className="col-span-3 py-2 text-pink-950 font-mono">
-                          No. of PIECES: {(p.quantity || 0) + (p.quantity_2 || 0) + (p.quantity_3 || 0) || 1}
+                          No. of PIECES: {p.quantity || 1}
                         </div>
                       </div>
 
