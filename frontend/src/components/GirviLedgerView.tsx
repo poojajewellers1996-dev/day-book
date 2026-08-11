@@ -266,19 +266,34 @@ export default function GirviLedgerView({
         }
 
         const records: any[] = [];
+        const parseRobustFloat = (val: string | null | undefined): number => {
+          if (!val) return 0;
+          const clean = val.replace(/[₹$,\s"]/g, "");
+          const num = parseFloat(clean);
+          return isNaN(num) ? 0 : num;
+        };
+        const cleanString = (val: string | null | undefined): string => {
+          if (!val) return "";
+          let s = val.trim();
+          if (s.startsWith('"') && s.endsWith('"')) {
+            s = s.slice(1, -1);
+          }
+          return s.trim();
+        };
+
         for (let i = 1; i < lines.length; i++) {
           const cols = parseCSVLine(lines[i]);
-          if (cols.length < Math.max(nameIdx, amountIdx, ornamentIdx)) continue;
+          if (cols.length === 0 || (cols.length === 1 && !cols[0])) continue;
 
-          const pledge_no = pledgeNoIdx !== -1 && cols[pledgeNoIdx] ? cols[pledgeNoIdx] : `IMP-${Date.now().toString().slice(-4)}-${i}`;
-          const date = dateIdx !== -1 && cols[dateIdx] ? cols[dateIdx] : new Date().toISOString().split("T")[0];
-          const customer_name = cols[nameIdx] || "";
-          const mobile = mobileIdx !== -1 ? cols[mobileIdx] : "";
-          const address = addressIdx !== -1 ? cols[addressIdx] : "";
-          const ornament = cols[ornamentIdx] || "";
-          const weight = weightIdx !== -1 ? parseFloat(cols[weightIdx]) || 0.0 : 0.0;
-          const amount = amountIdx !== -1 ? parseFloat(cols[amountIdx]) || 0.0 : 0.0;
-          const status = statusIdx !== -1 ? cols[statusIdx].toUpperCase() : "ACTIVE";
+          const pledge_no = pledgeNoIdx !== -1 && cols[pledgeNoIdx] ? cleanString(cols[pledgeNoIdx]) : `IMP-${Date.now().toString().slice(-4)}-${i}`;
+          const date = dateIdx !== -1 && cols[dateIdx] ? cleanString(cols[dateIdx]) : new Date().toISOString().split("T")[0];
+          const customer_name = nameIdx !== -1 ? cleanString(cols[nameIdx]) : "";
+          const mobile = mobileIdx !== -1 ? cleanString(cols[mobileIdx]) : "";
+          const address = addressIdx !== -1 ? cleanString(cols[addressIdx]) : "";
+          const ornament = ornamentIdx !== -1 ? cleanString(cols[ornamentIdx]) : "";
+          const weight = weightIdx !== -1 ? parseRobustFloat(cols[weightIdx]) : 0.0;
+          const amount = amountIdx !== -1 ? parseRobustFloat(cols[amountIdx]) : 0.0;
+          const status = statusIdx !== -1 ? cleanString(cols[statusIdx]).toUpperCase() : "ACTIVE";
 
           if (!customer_name || amount <= 0 || !ornament) continue;
 
