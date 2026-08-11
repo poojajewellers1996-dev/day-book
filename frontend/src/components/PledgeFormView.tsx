@@ -602,19 +602,19 @@ export default function PledgeFormView({
   };
 
   return (
-    <div className="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden p-6 max-w-4xl mx-auto">
-      <div className="flex justify-between items-center border-b border-amber-100 pb-3 mb-5">
-        <h3 className="font-bold text-lg font-serif text-amber-955">
+    <div className="bg-white rounded-2xl border border-amber-100 shadow-sm overflow-hidden p-3 sm:p-6 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-amber-100 pb-3 mb-4 gap-1">
+        <h3 className="font-bold text-base sm:text-lg font-serif text-amber-955">
           {isExisting ? "Add Existing Girvi (Past Pledges)" : "Pledge Form (Girvi Entry)"}
         </h3>
-        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 self-start sm:self-auto">
           Pooja Jewellers Standard Layout
         </span>
       </div>
 
-      <form onSubmit={handleSubmit} onKeyDown={handleEnterToNext} className="space-y-5">
+      <form onSubmit={handleSubmit} onKeyDown={handleEnterToNext} className="space-y-4">
         {/* Core details */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-wider text-amber-850 mb-1">Pledge No. (Required)</label>
             <input
@@ -624,7 +624,7 @@ export default function PledgeFormView({
               onChange={(e) => setForm((prev) => ({ ...prev, pledge_no: e.target.value }))}
               onKeyDown={handleKeyDown}
               placeholder="e.g. A3248"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-amber-250 outline-none text-xs focus:border-amber-500 font-bold"
+              className="w-full px-3 py-3 rounded-xl border border-amber-250 outline-none text-sm focus:border-amber-500 font-bold"
               style={{ background: "#FFFBF5" }}
             />
           </div>
@@ -636,7 +636,7 @@ export default function PledgeFormView({
               value={form.date}
               onChange={(e) => setForm((prev) => ({ ...prev, date: e.target.value }))}
               onKeyDown={handleKeyDown}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-amber-250 outline-none text-xs focus:border-amber-500 font-medium"
+              className="w-full px-3 py-3 rounded-xl border border-amber-250 outline-none text-sm focus:border-amber-500 font-medium"
               style={{ background: "#FFFBF5" }}
             />
           </div>
@@ -648,17 +648,17 @@ export default function PledgeFormView({
               value={form.due_date}
               onChange={(e) => setForm((prev) => ({ ...prev, due_date: e.target.value }))}
               onKeyDown={handleKeyDown}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-amber-250 outline-none text-xs focus:border-amber-500 font-medium"
+              className="w-full px-3 py-3 rounded-xl border border-amber-250 outline-none text-sm focus:border-amber-500 font-medium"
               style={{ background: "#FFFBF5" }}
             />
           </div>
         </div>
 
         {/* Pawner Details */}
-        <div className="border border-amber-100 rounded-2xl p-5 bg-amber-50/10 space-y-4">
+        <div className="border border-amber-100 rounded-2xl p-3 sm:p-5 bg-amber-50/10 space-y-3">
           <h4 className="text-xs font-bold text-amber-950 font-serif border-b border-amber-150 pb-1.5 uppercase tracking-wider">Pawner Information</h4>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="relative">
               <label className="block text-[10px] font-semibold text-amber-850 mb-1">Name of Pawner (Required)</label>
               <input
@@ -741,7 +741,7 @@ export default function PledgeFormView({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-[10px] font-semibold text-amber-850 mb-1">Mobile No.</label>
               <input

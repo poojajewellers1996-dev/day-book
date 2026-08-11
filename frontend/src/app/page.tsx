@@ -942,36 +942,9 @@ export default function Dashboard() {
             }
           `}</style>
 
-          <div className="main-content px-4 py-6">
-            {/* Mobile Date Navigator */}
-            {["pledges", "pledge_form", "existing_girvi"].includes(activeNav) && (
-              <div className="md:hidden flex items-center justify-between mb-5 p-2 bg-white rounded-2xl border border-amber-250/20 shadow-xs">
-                <button
-                  onClick={() => changeDate(-1)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50/70 active:scale-95 transition-all"
-                >
-                  <ChevronLeft size={20} style={{ color: "#8B6914" }} />
-                </button>
-                <div className="relative flex-1 flex items-center justify-center gap-2 cursor-pointer py-1.5">
-                  <Calendar size={15} style={{ color: "#D4AF37" }} />
-                  <span className="text-sm font-black" style={{ color: "#2D1B0E" }}>
-                    {fmtDateFriendly(currentDate)}
-                  </span>
-                  <input
-                    type="date"
-                    value={currentDate}
-                    onChange={e => setCurrentDate(e.target.value)}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                </div>
-                <button
-                  onClick={() => changeDate(1)}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-50/70 active:scale-95 transition-all"
-                >
-                  <ChevronRight size={20} style={{ color: "#8B6914" }} />
-                </button>
-              </div>
-            )}
+          <div className="main-content px-2 py-3 sm:px-4 sm:py-6">
+
+
 
             {isTabLocked(activeNav) ? (
               <div className="flex flex-col items-center justify-center min-h-[50vh] max-w-sm mx-auto p-8 bg-white rounded-3xl border border-amber-100 shadow-md text-center my-12 animate-fade-in">
