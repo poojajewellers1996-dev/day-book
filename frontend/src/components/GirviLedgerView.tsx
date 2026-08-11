@@ -256,9 +256,18 @@ export default function GirviLedgerView({
         const mobileIdx = headers.findIndex(h => h.includes("mobile") || h.includes("phone") || h.includes("contact"));
         const addressIdx = headers.findIndex(h => h.includes("address") || h.includes("location"));
         const ornamentIdx = headers.findIndex(h => h.includes("ornament") || h.includes("item") || h.includes("article"));
-        const weightIdx = headers.findIndex(h => h.includes("weight") || h.includes("wt") || h.includes("gram"));
+        const weightIdx = headers.findIndex(h => h.includes("weight") && !h.includes("gross") && !h.includes("less") && !h.includes("net"));
         const amountIdx = headers.findIndex(h => h.includes("amount") || h.includes("principal") || h.includes("loan") || h.includes("price"));
         const statusIdx = headers.findIndex(h => h.includes("status"));
+
+        const relationIdx = headers.findIndex(h => h.includes("relation") && !h.includes("relationname"));
+        const relationNameIdx = headers.findIndex(h => h.includes("relationname") || h.includes("relation_name"));
+        const incomeIdx = headers.findIndex(h => h.includes("income"));
+        const qtyIdx = headers.findIndex(h => h.includes("quantity") || h.includes("qty") || h.includes("pieces") || h.includes("pcs"));
+        const grossWeightIdx = headers.findIndex(h => h.includes("gross"));
+        const lessWeightIdx = headers.findIndex(h => h.includes("less"));
+        const netWeightIdx = headers.findIndex(h => h.includes("net"));
+        const estValueIdx = headers.findIndex(h => h.includes("estimated") || h.includes("value") || h.includes("val"));
 
         if (nameIdx === -1 || amountIdx === -1 || ornamentIdx === -1) {
           setImportError("Required columns (Customer Name, Ornament, Principal/Amount) could not be identified.");
@@ -304,9 +313,20 @@ export default function GirviLedgerView({
           const mobile = mobileIdx !== -1 ? cleanString(cols[mobileIdx]) : "";
           const address = addressIdx !== -1 ? cleanString(cols[addressIdx]) : "";
           const ornament = ornamentIdx !== -1 ? cleanString(cols[ornamentIdx]) : "";
-          const weight = weightIdx !== -1 ? parseRobustFloat(cols[weightIdx]) : 0.0;
           const amount = amountIdx !== -1 ? parseRobustFloat(cols[amountIdx]) : 0.0;
           const status = statusIdx !== -1 ? cleanString(cols[statusIdx]).toUpperCase() : "ACTIVE";
+
+          const pawner_relation = relationIdx !== -1 ? cleanString(cols[relationIdx]) : "";
+          const pawner_relation_name = relationNameIdx !== -1 ? cleanString(cols[relationNameIdx]) : "";
+          const income = incomeIdx !== -1 ? cleanString(cols[incomeIdx]) : "";
+          const quantity = qtyIdx !== -1 ? parseRobustFloat(cols[qtyIdx]) || 1 : 1;
+          const gross_weight = grossWeightIdx !== -1 ? parseRobustFloat(cols[grossWeightIdx]) : 0.0;
+          const less_weight = lessWeightIdx !== -1 ? parseRobustFloat(cols[lessWeightIdx]) : 0.0;
+          const net_weight = netWeightIdx !== -1 ? parseRobustFloat(cols[netWeightIdx]) : 0.0;
+          const estimated_value = estValueIdx !== -1 ? parseRobustFloat(cols[estValueIdx]) : 0.0;
+
+          const parsedWeight = weightIdx !== -1 ? parseRobustFloat(cols[weightIdx]) : 0.0;
+          const finalNetWeight = net_weight || parsedWeight || 0.0;
 
           if (!customer_name || amount <= 0) continue;
 
@@ -314,13 +334,21 @@ export default function GirviLedgerView({
             pledge_no,
             date,
             customer_name,
+            pawner_relation,
+            pawner_relation_name,
             mobile,
+            income,
             address,
             ornament: ornament || "Ornament",
-            weight,
+            quantity,
+            gross_weight,
+            less_weight,
+            net_weight: finalNetWeight,
+            weight: finalNetWeight,
+            estimated_value,
             amount,
             status: status === "RELEASED" ? "RELEASED" : "ACTIVE",
-            interest_rate: 3.0,
+            interest_percentage: 3.0,
             is_repledged: 0,
             repledged_amount: 0,
             interest_received_till_date: 0,
