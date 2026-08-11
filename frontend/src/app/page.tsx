@@ -635,37 +635,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Centre: Date navigator (Desktop only) */}
-        <div
-          className="hidden md:flex h-9 items-center gap-1 px-3 rounded-xl"
-            style={{ background: "#FFF9F0", border: "1px solid rgba(212,175,55,0.25)" }}
-          >
-            <button
-              onClick={() => changeDate(-1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-amber-100 transition-colors"
-            >
-              <ChevronLeft size={16} style={{ color: "#8B6914" }} />
-            </button>
-            <div className="relative flex items-center gap-1.5 px-2 cursor-pointer">
-              <Calendar size={13} style={{ color: "#D4AF37" }} />
-              <span className="text-sm font-bold" style={{ color: "#2D1B0E", minWidth: 140, textAlign: "center" }}>
-                {fmtDateFriendly(currentDate)}
-              </span>
-              <input
-                type="date"
-                value={currentDate}
-                onChange={e => setCurrentDate(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-                title="Pick Date"
-              />
-            </div>
-            <button
-              onClick={() => changeDate(1)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-amber-100 transition-colors"
-            >
-              <ChevronRight size={16} style={{ color: "#8B6914" }} />
-            </button>
-          </div>
+
 
         {/* Live Rates Badge */}
         {liveRates && (
